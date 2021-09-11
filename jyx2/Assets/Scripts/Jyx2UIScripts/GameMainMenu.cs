@@ -112,12 +112,11 @@ public partial class GameMainMenu : Jyx2_UIBase {
         var runtime = GameRuntimeData.Create(index);
         m_panelType = PanelType.NewGamePage;
         //默认创建主角
-        var player = new RoleInstance()
-        {
-            Name = "小虾米",
-            Key = "主角",
-            HeadAvata = "0",
-        };
+
+        var player = runtime.AllRoles[0];
+        player.Key = "主角";
+        player.HeadAvata = "0";
+
         player.BindKey();
         runtime.Team.Add(player);
 
@@ -167,7 +166,7 @@ public partial class GameMainMenu : Jyx2_UIBase {
 			GenerateRamdomPro(role, i);
         }
 		GenerateRamdomPro(role, 25);//资质
-        m_randomProperty. RefreshProperty();
+        m_randomProperty.RefreshProperty();
     }
 	
 	private void GenerateRamdomPro(RoleInstance role, int i)
