@@ -1,4 +1,4 @@
-# 金庸群侠传3D重制版.
+# 金庸群侠传3D重制版
 
 [![license](https://img.shields.io/badge/license-MIT%2B%E9%87%91%E7%BE%A43D%E9%87%8D%E5%88%B6%E7%89%88%E7%A4%BE%E5%8C%BA%E5%8D%8F%E8%AE%AE-blue)](https://github.com/jynew/jynew/blob/main/LICENSE)
 [![release](https://img.shields.io/badge/release-v0.1%20inner-brightgreen)](https://github.com/jynew/jynew/releases)
