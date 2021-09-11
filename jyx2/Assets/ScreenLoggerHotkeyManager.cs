@@ -10,7 +10,7 @@ public class ScreenLoggerHotkeyManager : MonoBehaviour
     public bool isloggerOn;
 
     /// <summary>
-    /// 呼出日志控制台的快捷键 test
+    /// 呼出日志控制台的快捷键
     /// </summary>
     private const KeyCode HotKey = KeyCode.F12;
     
