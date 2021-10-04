@@ -321,6 +321,10 @@ public class LevelMaster : MonoBehaviour
 
             var spawnPos = startTrigger.transform.position;
             PlayerSpawnAt(spawnPos);
+
+            if(m_CurrentType == MapType.BigMap)
+                GetPlayer().LoadBoat();
+
         }else if(loadPara.loadType == LevelLoadPara.LevelLoadType.StartAtPos)
         {
             PlayerSpawnAt(UnityTools.StringToVector3(loadPara.CurrentPos));
