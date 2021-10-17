@@ -269,18 +269,18 @@ namespace Jyx2
             return true;
         }
 
-        public void LeaveTeam(int roleId) 
+        public bool LeaveTeam(int roleId) 
         {
             var role = GetRole(roleId);
             if (role == null)
             {
                 Debug.LogError("调用了不存在的role加入队伍，roleid =" + roleId);
-                return;
+                return false;
             }
             if (GetRoleInTeam(roleId) ==null) 
             {
                 Debug.LogError("role is not in main team，roleid =" + roleId);
-                return;
+                return false;
             }
             Team.Remove(role);
 			role.Recover();
@@ -289,8 +289,7 @@ namespace Jyx2
 					AllRoles[index]=role;
 				}
 			}
-			
-			StoryEngine.Instance.DisplayPopInfo(role.Name + "离队。");
+            return true;
         }
 
         public RoleInstance GetRoleInTeam(int roleId)
@@ -453,6 +452,20 @@ namespace Jyx2
             get { return GetPojoAutoCreate<SaveableNumberDictionary<int>>("Items"); }
             set { SavePojo("Items", value); }
         }
+        
+        //物品使用人
+        public SaveableNumberDictionary<int> ItemUser
+        {
+            get { return GetPojoAutoCreate<SaveableNumberDictionary<int>>(nameof(ItemUser)); }
+            set { SavePojo(nameof(ItemUser), value); }
+        }
+
+        //小宝商店物品，{ID，数量}
+        public SaveableNumberDictionary<int> ShopItems
+        {
+            get { return GetPojoAutoCreate<SaveableNumberDictionary<int>>(nameof(ShopItems)); }
+            set { SavePojo(nameof(ShopItems), value); }
+        }
 
         public bool HaveItemBool(int itemId)
         {
@@ -489,6 +502,13 @@ namespace Jyx2
         public void AddItem(int id, int count)
         {
             AddItem(id.ToString(), count);
+        }
+
+        //是否获取过角色物品
+        public SaveableNumberDictionary<int> IsAdd
+        {
+            get { return GetPojoAutoCreate<SaveableNumberDictionary<int>>(nameof(IsAdd)); }
+            set { SavePojo(nameof(IsAdd), value); }
         }
 
         public int GetItemCount(int id)
@@ -608,7 +628,7 @@ namespace Jyx2
             if(gamemap != null)
             {
                 //大地图
-                if (gamemap.Tags == "WORLDMAP")
+                if (gamemap.IsWorldMap)
                     return 0;
 
                 //已经有地图打开的纪录
@@ -637,6 +657,19 @@ namespace Jyx2
         {
             string key = "SceneEntraceCondition_" + scene;
             SetKeyValues(key, value.ToString());
+        }
+
+        private bool _isShowCompass;
+
+        public bool isShowCompass
+        {
+            get { return _isShowCompass; }
+            set { _isShowCompass = value; }
+        }
+
+        public void CheckCompass()
+        {
+            isShowCompass = LevelMaster.Instance.IsInWorldMap&&Jyx2LuaBridge.HaveItem(182);
         }
 
         #endregion

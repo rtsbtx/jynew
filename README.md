@@ -32,7 +32,7 @@
 
 * 使用Unity引擎重制并致敬经典游戏《金庸群侠传》DOS版；
 * 后续支持重制《金群》的一系列MOD，或二次开发；
-* 提供开放的的能力给社区，有兴趣贡献力量的朋友可以让这个作品更加完善；
+* 提供开放的能力给社区，有兴趣贡献力量的朋友可以让这个作品更加完善；
 * 提供一个完备的单机游戏结构供有兴趣学习开发游戏的朋友进行参考；
 
 ## 开发中画面
@@ -65,7 +65,7 @@
 
 ## 引用项目
 
-[xlua](https://github.com/Tencent/xLua), [xNode](https://github.com/Siccity/xNode)
+[xlua](https://github.com/Tencent/xLua), [xNode](https://github.com/Siccity/xNode), [UniTask](https://github.com/Cysharp/UniTask)
 
 ## 参考项目
 

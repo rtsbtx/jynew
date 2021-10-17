@@ -14,6 +14,7 @@ using Jyx2;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 //AI计算相关
@@ -51,12 +52,7 @@ public class AIManager
     private void Init()
     {
     }
-    public void GetAIResult(RoleInstance role, Action<AIResult> callback)
-    {
-        GetAIResultClassic(role, callback);
-    }
-
-    public void GetAIResultClassic(RoleInstance role, Action<AIResult> callback)
+    public async UniTask<AIResult> GetAIResult(RoleInstance role)
     {
         //初始化范围逻辑
         //rangeLogic = new RangeLogic(BattleboxHelper.Instance.IsBlockExists, BattleModel.BlockHasRole);
@@ -185,21 +181,18 @@ public class AIManager
 
         if (result != null)
         {
-            callback(result);
-            return;
+            return result;
         }
 
         //否则靠近自己最近的敌人
         result = MoveToNearestEnemy(role, range);
         if (result != null)
         {
-            callback(result);
-            return;
+            return result;
         }
 
         //否则原地休息
-        callback(Rest(role));
-        return;
+        return Rest(role);
     }
 
     public double GetSkillCastResultScore(RoleInstance caster, BattleZhaoshiInstance skill,
@@ -449,7 +442,7 @@ public class AIManager
         //普通攻击
         if (magic.DamageType == 0)
         {
-            if (r1.Mp <= 10)
+            if (r1.Mp <= magic.MpCost) //已经不够内力释放了
             {
                 rst.damage = 1 + UnityEngine.Random.Range(0, 10);
                 return rst;
