@@ -19,6 +19,7 @@ public class GeneralSettingsPanel : Jyx2_UIBase
     public Dropdown resolutionDropdown;
     public Dropdown windowDropdown;
     public Dropdown difficultyDropdown;
+    public Dropdown viewportDropdown;
 
     public Slider volumeSlider;
     public Slider soundEffectSlider;
@@ -36,11 +37,12 @@ public class GeneralSettingsPanel : Jyx2_UIBase
     {
         _graphicSetting = GraphicSetting.GlobalSetting;
         audioManager = GameObject.Find("[AudioManager]");
-        audiosource = audioManager.GetComponent<AudioSource>();
+        audiosource = audioManager?.GetComponent<AudioSource>();
 
         InitWindowDropdown();
         InitResolutionDropdown();
         InitVolumeSlider();
+        InitViewportSetting();
 
         m_CloseButton.onClick.AddListener(Close);
     }
@@ -50,7 +52,6 @@ public class GeneralSettingsPanel : Jyx2_UIBase
         Save();
         _graphicSetting.Save();
         _graphicSetting.Execute();
-        gameObject.SetActive(false);
         Jyx2_UIManager.Instance.HideUI(nameof(GraphicSettingsPanel));
     }
 
@@ -70,6 +71,7 @@ public class GeneralSettingsPanel : Jyx2_UIBase
 
     public void InitResolutionDropdown()
     {
+#if !UNITY_ANDROID
         resolutions = Screen.resolutions;
         resolutionDropdown.ClearOptions();
         List<string> options = new List<string>();
@@ -99,28 +101,34 @@ public class GeneralSettingsPanel : Jyx2_UIBase
             resolutionDropdown.value = currentResolutionIndex;
         }
         resolutionDropdown.RefreshShownValue();
-
+#endif
     }
 
     public void InitWindowDropdown()
     {
+#if !UNITY_ANDROID
         if(PlayerPrefs.HasKey("fullscreen"))
         {
             Screen.fullScreen = PlayerPrefs.GetInt("fullscreen") == 1;
             windowDropdown.value = PlayerPrefs.GetInt("fullscreen");
             windowDropdown.RefreshShownValue();
         }
+#endif
     }
 
     public void InitDifficultyDropdown()
     {
     }
 
-    public void InitVolumeSlider()
+    void InitVolumeSlider()
     {
         if (PlayerPrefs.HasKey("volume"))
         {
-            audiosource.volume = PlayerPrefs.GetFloat("volume");
+            if (audiosource != null)
+            {
+                audiosource.volume = PlayerPrefs.GetFloat("volume");    
+            }
+            
             volumeSlider.value = PlayerPrefs.GetFloat("volume");
         }
     }
@@ -153,6 +161,22 @@ public class GeneralSettingsPanel : Jyx2_UIBase
     public void SetFullscreen(int index)
     {
         Screen.fullScreen = index == 1;
+    }
+
+    public void SetViewport(int index)
+    {
+        PlayerPrefs.SetInt("viewport_type", viewportDropdown.value);
+        GameViewPortManager.Instance.SetViewport((GameViewPortManager.ViewportType)(viewportDropdown.value));
+    }
+
+    void InitViewportSetting()
+    {
+        int setting = 0;
+        if (PlayerPrefs.HasKey("viewport_type"))
+        {
+            setting = PlayerPrefs.GetInt("viewport_type");    
+        }
+        viewportDropdown.value = setting;
     }
 
     /*游戏难度，暂未实现*/

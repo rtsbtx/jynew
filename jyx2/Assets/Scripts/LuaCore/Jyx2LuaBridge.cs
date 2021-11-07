@@ -268,13 +268,7 @@ namespace Jyx2
         public static void Dead()
         {
             RunInMainThread(() => {
-                
-                //TODO..
-                Jyx2_UIManager.Instance.HideUI(nameof(InteractUIPanel));
-                MessageBox.Create("GAME OVER", () =>
-                {
-                    LevelMaster.Instance.QuitToMainMenu();
-                });
+                Jyx2_UIManager.Instance.ShowUI(nameof(GameOver));
             });
         }
 
@@ -481,9 +475,15 @@ namespace Jyx2
         }
 
         //增加道德
-        public static void AddEthics(int add)
+        public static void AddEthics(int value)
         {
-            runtime.Player.Pinde = HSFrameWork.Common.Tools.Limit(runtime.Player.Pinde + add, 0, 100);
+            RunInMainThread(() =>
+            {
+                runtime.Player.Pinde = HSFrameWork.Common.Tools.Limit(runtime.Player.Pinde + value, 0, 100);
+               /* storyEngine.DisplayPopInfo((value > 0 ? "增加" : "减少") + "道德:" + Math.Abs(value));*/
+                Next();
+            });
+            Wait();
         }
 
         public static void ChangeScencePic(int p1,int p2,int p3,int p4)
@@ -617,8 +617,10 @@ namespace Jyx2
                 var r = runtime.GetRole(roleId);
                 var v0 = r.Qinggong;
                 r.Qinggong = HSFrameWork.Common.Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRITE);
-                //storyEngine.DisplayPopInfo(r.Name + "轻功增加" + (r.Qinggong - v0));
+                storyEngine.DisplayPopInfo(r.Name + "轻功增加" + (r.Qinggong - v0));
+                Next();
             });
+            Wait();
         }
 
         //内力
@@ -630,11 +632,13 @@ namespace Jyx2
                 var v0 = r.MaxMp;
                 r.MaxMp = HSFrameWork.Common.Tools.Limit(v0 + value, 0, GameConst.MAX_HPMP);
                 r.Mp = HSFrameWork.Common.Tools.Limit(r.Mp + value, 0, GameConst.MAX_HPMP);
-                //storyEngine.DisplayPopInfo(r.Name + "内力增加" + (r.MaxMp - v0));
+                storyEngine.DisplayPopInfo(r.Name + "内力增加" + (r.MaxMp - v0));
+                Next();
             });
+            Wait();
         }
 
-        //攻击力
+        //武力（原始属性）
         public static void AddAttack(int roleId, int value)
         {
             RunInMainThread(() =>
@@ -642,11 +646,13 @@ namespace Jyx2
                 var r = runtime.GetRole(roleId);
                 var v0 = r.Attack;
                 r.Attack = HSFrameWork.Common.Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRITE);
-                //storyEngine.DisplayPopInfo(r.Name + "攻击力增加" + (r.Attack - v0));
+                storyEngine.DisplayPopInfo(r.Name + "武力增加" + (r.Attack - v0));
+                Next();
             });
+            Wait();
         }
 
-        //生命值
+        //生命
         public static void AddHp(int roleId, int value)
         {
             RunInMainThread(() =>
@@ -655,8 +661,10 @@ namespace Jyx2
                 var v0 = r.MaxHp;
                 r.MaxHp = HSFrameWork.Common.Tools.Limit(v0 + value, 0, GameConst.MAX_HPMP);
                 r.Hp = HSFrameWork.Common.Tools.Limit(r.Hp + value, 0, GameConst.MAX_HPMP);
-                //storyEngine.DisplayPopInfo(r.Name + "生命增加" + (r.MaxHp - v0));
+                storyEngine.DisplayPopInfo(r.Name + "生命增加" + (r.MaxHp - v0));
+                Next();
             });
+            Wait();
         }
 
         //设置角色内力属性
@@ -1004,7 +1012,7 @@ namespace Jyx2
         {
             RunInMainThread(() =>{
                 runtime.Player.Shengwang = HSFrameWork.Common.Tools.Limit(runtime.Player.Shengwang + value, 0, GameConst.MAX_ROLE_SHENGWANG);
-                storyEngine.DisplayPopInfo("增加声望:" + value);
+            /*    storyEngine.DisplayPopInfo("增加声望:" + value);*/
                 Next();
             });
             Wait();
@@ -1432,7 +1440,7 @@ namespace Jyx2
         {
             RunInMainThread(() =>
             {
-                List<string> selectionContent = new List<string>() { "是", "否" };
+                List<string> selectionContent = new List<string>() { "是(Y)", "否(N)" };
                 storyEngine.BlockPlayerControl = true;
                 Jyx2_UIManager.Instance.ShowUI(nameof(ChatUIPanel), ChatType.Selection, "主角", selectMessage, selectionContent, new Action<int>((index) =>
                 {
