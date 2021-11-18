@@ -9,32 +9,31 @@
  */
 using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using HanSquirrel.ResourceManager;
 using Jyx2;
 using Jyx2.Middleware;
+using Jyx2Configs;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Sirenix.OdinInspector;
 
 public class LevelMasterBooster : MonoBehaviour
 {
-    [ProgressBar(1, 50)]
-    [LabelText("测试等级")]
-    public int m_TestLevel = 1;
 
-    [LabelText("测试队友（角色Key）")]
-    public string[] m_TestTeammate;
+    [LabelText("模拟移动端")] public bool m_MobileSimulate;
 
-    [LabelText("模拟数据")]
-    public bool m_RuntimeDataSimulate = true;
+    [InfoBox("不允许设置所属地图，因为当前是战斗地图", InfoMessageType.Error, "@this.m_GameMap != null && this.m_IsBattleMap")]
+    [LabelText("所属地图")]
+    [InfoBox("仅用于在本场景启动调试时参考使用")]
+    [HideIf("@this.m_IsBattleMap")]
+    public Jyx2ConfigMap m_GameMap;
 
-    [LabelText("模拟移动端")]
-    public bool m_MobileSimulate = false;
-
-
+    [LabelText("战斗地图")] public bool m_IsBattleMap = false;
+    
     GameRuntimeData runtime { get { return GameRuntimeData.Instance; } }
 
-    async private void Awake()
+    private async void Awake()
     {
         await BeforeSceneLoad.loadFinishTask;
 
@@ -43,17 +42,25 @@ public class LevelMasterBooster : MonoBehaviour
         DontDestroyOnLoad(levelMaster);
         levelMaster.name = "LevelMaster";
         levelMaster.transform.SetParent(transform, false);
-        levelMaster.RuntimeDataSimulate = m_RuntimeDataSimulate;
         levelMaster.MobileSimulate = m_MobileSimulate;
+
+        if (LevelMaster.GetCurrentGameMap() == null && m_GameMap != null)
+        {
+            LevelMaster.SetCurrentMap(m_GameMap);
+        }
     }
 
     private async void Start()
     {
         await BeforeSceneLoad.loadFinishTask;
+
         if (GameRuntimeData.Instance == null)
         {
             GameRuntimeData.CreateNew();
         }
+
+        if (m_IsBattleMap)
+            return;
 
         //设置所有的宝箱
         foreach(var chest in GameObject.FindObjectsOfType<MapChest>())
