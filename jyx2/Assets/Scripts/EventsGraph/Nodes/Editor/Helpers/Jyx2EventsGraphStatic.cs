@@ -1,9 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using HSFrameWork.ConfigTable;
 using Jyx2;
 using UnityEngine;
 
+[Obsolete]
 static public class Jyx2EventsGraphStatic 
 {
     static Jyx2EventsGraphStatic()
@@ -14,30 +16,30 @@ static public class Jyx2EventsGraphStatic
         }
             
         var tmp = new List<string>();
-        foreach (var role in ConfigTable.GetAll<Jyx2Role>())
+        /*foreach (var role in ConfigTable.GetAll<Jyx2Role>())
         {
             tmp.Add(role.Name);
         }
-        s_roleList = tmp.ToArray();
+        s_roleList = tmp.ToArray();*/
 
         tmp.Clear();
-        foreach (var item in ConfigTable.GetAll<Jyx2Item>())
+        /*foreach (var item in ConfigTable.GetAll<Jyx2Item>())
         {
             tmp.Add(item.Name);
         }
-        s_itemList = tmp.ToArray();
+        s_itemList = tmp.ToArray();*/
 
         tmp.Clear();
-        foreach (var item in ConfigTable.GetAll<Jyx2Skill>())
+        /*foreach (var item in ConfigTable.GetAll<Jyx2Skill>())
         {
             tmp.Add(item.Name);
         }
-        s_skillList = tmp.ToArray();
+        s_skillList = tmp.ToArray();*/
         tmp.Clear();
-        foreach (var item in ConfigTable.GetAll<Jyx2Map>())
+        /*foreach (var item in ConfigTable.GetAll<Jyx2Map>())
         {
             tmp.Add(item.Name);
-        }
+        }*/
         s_sceneList = tmp.ToArray();
     }
 

@@ -19,14 +19,13 @@ using HSFrameWork.ConfigTable;
 using HanSquirrel.ResourceManager;
 using UniRx;
 using System;
-using System.Windows.Forms;
 using Cinemachine;
 using Cysharp.Threading.Tasks;
+using Jyx2Configs;
 using Application = UnityEngine.Application;
 
 public class LevelMaster : MonoBehaviour
 {
-    public static GameMap LastGameMap = null; //前一个地图
 
     //载入参数
     public class LevelLoadPara
@@ -65,24 +64,18 @@ public class LevelMaster : MonoBehaviour
 
     public bool RuntimeDataSimulate = true;
     public bool MobileSimulate = false;
-
+    public GameObject m_MobileRotateSlider;
+    public bl_HUDText HUDRoot;
+    public GameObject navPointerPrefab; //寻路图标prefab
     public ETCTouchPad m_TouchPad;
+    public ETCJoystick m_Joystick;
 
     Transform _player;
     MapRole _playerView;
     NavMeshAgent _playerNavAgent;
+    GameObject _navPointer;
 
-    MapType m_CurrentType = MapType.Explore;
-
-
-    public GameObject m_MobileRotateSlider;
-
-    public bl_HUDText HUDRoot;
-
-    public GameObject navPointerPrefab; //寻路图标prefab
-
-    private GameObject _navPointer;
-
+    //寻路终点图标
     GameObject navPointer
     {
         get
@@ -93,10 +86,18 @@ public class LevelMaster : MonoBehaviour
             return result;
         }
         set { _navPointer = value; }
-    } //寻路终点图标}
+    }
 
-    public ETCJoystick m_Joystick;
+    CameraHelper m_CameraHelper;
+    
+    public static Jyx2ConfigMap LastGameMap = null; //前一个地图
+    private static Jyx2ConfigMap _currentMap;
 
+    public static void SetCurrentMap(Jyx2ConfigMap map)
+    {
+        _currentMap = map;
+    } 
+    
     [HideInInspector]
     public bool IsInited = false;
 
@@ -104,8 +105,6 @@ public class LevelMaster : MonoBehaviour
     public float unlockDegee = 10f;
 
     //BattleHelper m_BattleHelper;
-
-    CameraHelper m_CameraHelper;
 
     bool IsMobilePlatform()
     {
@@ -121,20 +120,26 @@ public class LevelMaster : MonoBehaviour
     /// 获取当前所在地图
     /// </summary>
     /// <returns></returns>
-    public GameMap GetCurrentGameMap()
+    public static Jyx2ConfigMap GetCurrentGameMap()
     {
-        string sceneName = SceneManager.GetActiveScene().name;
-        var gameMap = ConfigTable.Get<GameMap>(sceneName);
-        return gameMap;
+        return _currentMap;
     }
+
+    /// <summary>
+    /// 当前是否在战斗中
+    /// </summary>
+    public static bool IsInBattle = false;
 
     /// <summary>
     /// 当前是否在大地图，统一判断方式
     /// </summary>
-	public bool IsInWorldMap { get { return m_CurrentType == MapType.WorldMap; } }
+    public bool IsInWorldMap
+    {
+        get { return _currentMap.IsWorldMap(); }
+    }
 
     // Use this for initialization
-    async void Start()
+    void Start()
     {
         //先关闭触发事件
         GameObject triggers = GameObject.Find("Level/Triggers");
@@ -162,13 +167,11 @@ public class LevelMaster : MonoBehaviour
         {
             brain.m_DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Style.Cut, 0);
         }
-        
-
 
         var gameMap = GetCurrentGameMap();
-        if (gameMap != null)
+        if (gameMap != null && !IsInBattle)
         {
-            if (gameMap.IsWorldMap)//JYX2 临时测试
+            if (gameMap.IsWorldMap())//JYX2 临时测试
             {
                 var btn = transform.Find("UI/MainUI/BackButton");
                 if (btn != null)
@@ -180,20 +183,13 @@ public class LevelMaster : MonoBehaviour
             //播放音乐
             PlayMusic(gameMap);
 
-            if (gameMap.IsWorldMap)
+            //显示当前地图名，大地图不用显示
+            if(!gameMap.IsWorldMap())
             {
-                m_CurrentType = MapType.WorldMap;
-            }
-            else
-            {
-                //显示当前地图名，大地图不用显示
                 Jyx2_UIManager.Instance.ShowUI(nameof(CommonTipsUIPanel), TipsType.MiddleTop, gameMap.GetShowName());
             }
-
-            if (string.IsNullOrEmpty(runtime.CurrentMap))
-            {
-                runtime.CurrentMap = gameMap.Key;
-            }
+            
+            runtime.CurrentMap = gameMap.Id.ToString();
         }
 
         navPointer = Instantiate(navPointerPrefab);
@@ -206,7 +202,7 @@ public class LevelMaster : MonoBehaviour
         TryBindPlayer();
 
         //大地图不能使用跟随相机（目前好像比较卡？）
-        if (gameMap != null && !gameMap.IsWorldMap)
+        if (gameMap != null && !gameMap.IsWorldMap())
         {
             //初始化跟随相机
             GameViewPortManager.Instance.InitForLevel(_player);
@@ -226,8 +222,7 @@ public class LevelMaster : MonoBehaviour
                     c.enabled = true;
             }
         }
-        
-        
+
         //修复所有没有绑定controller的角色
         foreach (var animator in FindObjectsOfType<Animator>())
         {
@@ -242,37 +237,33 @@ public class LevelMaster : MonoBehaviour
     }
 
 
-    private void PlayMusic(GameMap gameMap)
+    private void PlayMusic(Jyx2ConfigMap gameMap)
     {
         if (gameMap == null) return;
 
-        var enterMusic = gameMap.GetEnterMusic();
-        if (!string.IsNullOrEmpty(enterMusic))
+        //首先播放进门音乐
+        if (!AudioManager.PlayMusic(gameMap.InMusic))
         {
-            PlayMusicAtPath(enterMusic);
-        }
-        else if (LastGameMap != null)
-        {
-            PlayLeaveMusic(LastGameMap);
+            
+            //如果没有在，则播放出门音乐
+            if (LastGameMap != null)
+            {
+                if (LastGameMap.ForceSetLeaveMusicId != -1)
+                {
+                    AudioManager.PlayMusic(LastGameMap.ForceSetLeaveMusicId);
+                }
+
+                if (LastGameMap.OutMusic != null)
+                {
+                    AudioManager.PlayMusic(LastGameMap.OutMusic);
+                }
+            }
         }
     }
 
     public void PlayMusicAtPath(string musicPath)
     {
         AudioManager.PlayMusicAtPath(musicPath).Forget();
-    }
-
-    /// <summary>
-    /// 播放离开音乐
-    /// </summary>
-    public void PlayLeaveMusic(GameMap gameMap)
-    {
-        if (gameMap == null) return;
-        var leaveMusic = gameMap.GetLeaveMusic();
-        if (!string.IsNullOrEmpty(leaveMusic))
-        {
-            PlayMusicAtPath(leaveMusic);
-        }
     }
 
     private void UpdateMobileControllerUI()
@@ -298,7 +289,7 @@ public class LevelMaster : MonoBehaviour
 
         if (loadPara.loadType == LevelLoadPara.LevelLoadType.Load)
         {
-            if (map.IsWorldMap)
+            if (map.IsWorldMap())
             {
                 if (string.IsNullOrEmpty(runtime.WorldPosition))
                     return;
@@ -315,7 +306,7 @@ public class LevelMaster : MonoBehaviour
         }
         else if (loadPara.loadType == LevelLoadPara.LevelLoadType.Entrance)
         {
-            if (map.IsWorldMap) //大地图
+            if (map.IsWorldMap()) //大地图
             {
                 if (string.IsNullOrEmpty(runtime.WorldPosition))
                     return;
@@ -327,24 +318,16 @@ public class LevelMaster : MonoBehaviour
                 var entranceObj = GameObject.FindGameObjectWithTag("Entrance"); //找入口
                 if (entranceObj != null)
                 {
-                    var spawnPos = entranceObj.transform.position;
-                    PlayerSpawnAt(spawnPos);
+                    PlayerSpawnAt(entranceObj.transform.position);
                 }
             }
         }
         else if (loadPara.loadType == LevelLoadPara.LevelLoadType.StartAtTrigger)
         {
-            GameObject startTrigger = GameObject.Find(loadPara.triggerName);
-            if(startTrigger == null)
-            {
-                Debug.LogError($"地图{map.Name}的指定载入trigger:{loadPara.triggerName} 未定义");
-                return;
-            }
-
-            var spawnPos = startTrigger.transform.position;
-            PlayerSpawnAt(spawnPos);
-
-            if(m_CurrentType == MapType.WorldMap)
+            _playerNavAgent.enabled = false;
+            Transport(loadPara.triggerName);
+            _playerNavAgent.enabled = true;
+            if(_currentMap.IsWorldMap())
                 GetPlayer().LoadBoat();
         }
         else if(loadPara.loadType == LevelLoadPara.LevelLoadType.StartAtPos)
@@ -390,7 +373,7 @@ public class LevelMaster : MonoBehaviour
         
         SetPlayerSpeed(0);
         var gameMap = GetCurrentGameMap();
-        if (gameMap != null && gameMap.IsWorldMap)
+        if (gameMap != null && gameMap.IsWorldMap())
         {
             _playerNavAgent.speed = 10; //大地图上放大一倍
         }
@@ -545,7 +528,7 @@ public class LevelMaster : MonoBehaviour
             return;
 
         //在editor上可以寻路
-        if (!Application.isMobilePlatform || m_CurrentType == MapType.WorldMap)
+        if (!Application.isMobilePlatform || _currentMap.IsWorldMap())
         {
             //点击寻路
             if (Input.GetMouseButton(1) && !UnityTools.IsPointerOverUIObject())
@@ -878,7 +861,7 @@ public class LevelMaster : MonoBehaviour
             return;
         }
 
-        if (GetCurrentGameMap().IsWorldMap)
+        if (_currentMap.IsWorldMap())
         {
             GetPlayer().RecordWorldInfo();
         }
@@ -915,19 +898,6 @@ public class LevelMaster : MonoBehaviour
         return player;
     }
 
-    public void QuitToBigMap()
-    {
-		// modified by eaphone at 2021/05/30
-		//LevelLoader.LoadGameMap("0_BigMap");
-        //LevelLoader.LoadGameMap("Level_BigMap");
-		LevelLoader.LoadGameMap("0_BigMap&transport#" + GetCurrentGameMap().BigMapTriggerName);
-    }
-
-    public void QuitToMainMenu()
-    {
-        SceneManager.LoadScene("0_GameStart");
-    }
-
     //刷新本场景内的所有事件
     //事件执行和更改结果存储在runtime里，需要结合当前场景进行调整
     public void RefreshGameEvents()
@@ -935,15 +905,9 @@ public class LevelMaster : MonoBehaviour
         var gameMap = GetCurrentGameMap();
         if (gameMap == null) return;
 
-        //场景ID
-        string sceneId = gameMap.Jyx2MapId;
-
-        //大地图
-        if (string.IsNullOrEmpty(sceneId))
-            return;
-
         //调整所有的触发器
         GameObject eventsParent = GameObject.Find("Level/Triggers");
+        if (eventsParent == null) return;
         foreach(Transform obj in eventsParent.transform)
         {
             var evt = obj.GetComponent<GameEvent>();
@@ -952,7 +916,7 @@ public class LevelMaster : MonoBehaviour
 
             try
             {
-                string modify = runtime.GetModifiedEvent(int.Parse(sceneId), int.Parse(eventId));
+                string modify = runtime.GetModifiedEvent(gameMap.Id, int.Parse(eventId));
                 if (!string.IsNullOrEmpty(modify))
                 {
                     string[] tmp = modify.Split('_');
@@ -966,37 +930,7 @@ public class LevelMaster : MonoBehaviour
             {
                 Debug.LogError("事件解析错误,事件ID必须是数字,eventId=" + eventId);
             }
-            
         }
     }
-	
-	//增加接口修改bigmapzone脚本的command。用于和韦小宝对话后，增加传送韦小宝的逻辑
-	//added by eaphone at 2021/6/8
-	public void ModifyBigmapZoneCmd(string cmd, string target="Leave"){
-		var gameMap = GetCurrentGameMap();
-        if (gameMap == null) return;
-
-        //场景ID
-        string sceneId = gameMap.Jyx2MapId;
-
-        //大地图
-        if (string.IsNullOrEmpty(sceneId))
-            return;
-
-        GameObject obj = GameObject.Find("Level/Triggers/"+target);
-        var evt = obj.GetComponent<BigMapZone>();
-		if (evt != null){
-			string eventId = obj.name;
-			if(target==eventId){
-				try
-				{
-					evt.Command = cmd;
-				}catch(Exception e)
-				{
-					Debug.LogError(e);
-				}
-			}
-		}
-	}
 }
 

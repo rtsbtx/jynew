@@ -18,6 +18,7 @@ using DG.Tweening;
 using Jyx2;
 using HSFrameWork.Common;
 using Jyx2.Battle;
+using Jyx2Configs;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -26,7 +27,7 @@ public class BattleStartParams
 {
     public Action<BattleResult> callback; //战斗结果
     public List<RoleInstance> roles; //参与战斗的角色
-    public Jyx2Battle battleData; //战斗地图数据
+    public Jyx2ConfigBattle battleData; //战斗地图数据
     public bool backToBigMap = true;
     public bool playerJoin = true;
 }
@@ -121,9 +122,8 @@ public class BattleManager : MonoBehaviour
         }
 
         m_BattleModel.InitBattleModel(); //战场初始化 行动顺序排序这些
-        Jyx2_UIManager.Instance.ShowUI(nameof(CommonTipsUIPanel), TipsType.MiddleTop, "战斗开始"); //提示UI
-        Jyx2_UIManager.Instance.ShowUI(nameof(BattleMainUIPanel), BattleMainUIState.ShowHUD); //展示角色血条
-        
+        await Jyx2_UIManager.Instance.ShowUIAsync(nameof(CommonTipsUIPanel), TipsType.MiddleTop, "战斗开始"); //提示UI
+        await Jyx2_UIManager.Instance.ShowUIAsync(nameof(BattleMainUIPanel), BattleMainUIState.ShowHUD); //展示角色血条
         
         //OLD
         //BattleStateMechine.Instance.StartStateMechine(OnBattleEnd); //交给战场状态机接管 状态机完成会回调回来
@@ -228,7 +228,7 @@ public class BattleManager : MonoBehaviour
         }
     }
 
-    string CalExpGot(Jyx2Battle battleData)
+    string CalExpGot(Jyx2ConfigBattle battleData)
     {
         List<RoleInstance> alive_teammate = m_BattleModel.Roles.Where(r => r.team == 0).ToList();
         string rst = "";
@@ -248,7 +248,7 @@ public class BattleManager : MonoBehaviour
             {
                 role.ExpForItem += role.ExpGot;
             }
-            else if (practiseItem != null && role.GetWugongLevel(practiseItem.Wugong) <= 10)
+            else if (practiseItem != null && practiseItem.Skill != null && role.GetWugongLevel(practiseItem.Skill.Id) <= 10)
             {
                 role.Exp += role.ExpGot / 2;
                 role.ExpForItem += role.ExpGot / 2;
@@ -279,11 +279,11 @@ public class BattleManager : MonoBehaviour
                 change = 0;
 
                 //修炼秘籍
-                while (role.CanFinishedItem() && role.GetWugongLevel(practiseItem.Wugong) <= 10)
+                while (role.CanFinishedItem() && practiseItem.Skill != null && role.GetWugongLevel(practiseItem.Skill.Id) <= 10)
                 {
                     role.UseItem(practiseItem);
                     change++;
-                    var level = role.GetWugongLevel(practiseItem.Wugong);
+                    var level = role.GetWugongLevel(practiseItem.Skill.Id);
                     rst += $"{role.Name} 修炼 {practiseItem.Name} 成功\n";
                     if (level > 1) rst += $"{practiseItem.Name} 升为 " + level.ToString() + " 级\n";
                 }
@@ -384,7 +384,7 @@ public class BattleManager : MonoBehaviour
 
         //绘制周围的攻击格子
         var blockList = rangeLogic.GetSkillCastBlocks(sx, sy, zhaoshi, role);
-        return blockList;
+        return blockList.ToList();
     }
 
     //获取范围内的敌人或者友军

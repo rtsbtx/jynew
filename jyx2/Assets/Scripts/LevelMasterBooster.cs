@@ -99,7 +99,7 @@ public class LevelMasterBooster : MonoBehaviour
         if (string.IsNullOrEmpty(scene))
         {
             //sceneName = SceneManager.GetActiveScene().name;
-            sceneName = LevelMaster.Instance.GetCurrentGameMap().Jyx2MapId.ToString();
+            sceneName = LevelMaster.GetCurrentGameMap().Id.ToString();
         }
         else
         {
@@ -132,11 +132,11 @@ public class LevelMasterBooster : MonoBehaviour
 
         if (LevelMaster.Instance == null) return;
 
-        var currentGameMap = LevelMaster.Instance.GetCurrentGameMap();
+        var currentGameMap = LevelMaster.GetCurrentGameMap();
         if (currentGameMap == null)
             return;
 
-        string sceneName = currentGameMap.Jyx2MapId.ToString();
+        string sceneName = currentGameMap.Id.ToString();
         var dict = runtime.GetSceneInfo(sceneName);
         if (dict == null)
             return;
@@ -163,6 +163,9 @@ public class LevelMasterBooster : MonoBehaviour
             }
             else if (kv.Value.StartsWith(CONTROLLER_SCENE_INFO_PRFIX)) //设置animatorController
             {
+                // 如果有animatorController则必须可见
+                obj.SetActive(true);
+
                 string animationControllerPath = kv.Value.Replace(CONTROLLER_SCENE_INFO_PRFIX, "");
                 
                 var animator = obj.GetComponent<Animator>();

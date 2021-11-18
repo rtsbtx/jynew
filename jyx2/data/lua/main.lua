@@ -110,7 +110,7 @@ Play2Amination = CS.Jyx2.Jyx2LuaBridge.Play2Amination
 --45=2d|3|0|0|0|AddSpeed(#0, #1);
 AddSpeed = CS.Jyx2.Jyx2LuaBridge.AddSpeed --加速度
 --46=2e|3|0|0|0|AddMP(#0, #1);
-AddMP = CS.Jyx2.Jyx2LuaBridge.AddMaxMp --加内力
+AddMp = CS.Jyx2.Jyx2LuaBridge.AddMp --加内力
 --47=2f|3|0|0|0|AddAttack(#0, #1);
 AddAttack = CS.Jyx2.Jyx2LuaBridge.AddAttack --加攻击力
 --48=30|3|0|0|0|AddHP(#0, #1);
@@ -180,6 +180,7 @@ jyx2_CheckEventCount = CS.Jyx2.Jyx2LuaBridge.jyx2_CheckEventCount
 jyx2_CheckBookAndRepute=CS.Jyx2.Jyx2LuaBridge.jyx2_CheckBookAndRepute
 jyx2_SetTimelineSpeed = CS.Jyx2.Jyx2LuaBridge.jyx2_SetTimelineSpeed
 jyx2_PlayTimelineSimple = CS.Jyx2.Jyx2LuaBridge.jyx2_PlayTimelineSimple
+jyx2_ShowEndScene = CS.Jyx2.Jyx2LuaBridge.jyx2_ShowEndScene
 function main_getLuaFiles()
 	return {}
 end 

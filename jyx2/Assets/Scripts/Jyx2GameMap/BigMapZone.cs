@@ -10,194 +10,147 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Jyx2;
 using HSFrameWork.ConfigTable;
+using Jyx2Configs;
+using NUnit.Framework;
+using Sirenix.OdinInspector;
 using UniRx;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class BigMapZone : MonoBehaviour
 {
-    public string EnterMapKey;
-    public string Command;
-    public string ButtonText;
-    public GameObject[] m_EventTargets;
-    
-    private async void Start()
-    {
-	    await BeforeSceneLoad.loadFinishTask;
+	[InfoBox("注：默认ID 1000为大地图")]
+	[LabelText("传送的地图ID")] 
+	public int TransportMapId = GameConst.WORLD_MAP_ID;
 
-        await UniTask.Delay(TimeSpan.FromSeconds(1f)); //等1秒再生效
-        triggerEnabled = true;
-    }
+	[InfoBox("对应指定场景的Level/Triggers下节点")]
+	[LabelText("传送的位置名")] 
+	public string TransportTriggerName;
 
-    private bool triggerEnabled = false;
-
-    void OnTriggerEnter(Collider other)
-    {
-	    if (!triggerEnabled) return;
-        ShowEnterButton(EnterMapKey, Command, ButtonText);
-        UnityTools.HighLightObjects(m_EventTargets, Color.red);
-    }
-
-    void OnTriggerExit(Collider other)
-    {
-	    if (!triggerEnabled) return;
-        //HideEnterButton();
-        Jyx2_UIManager.Instance.HideUI(nameof(InteractUIPanel));
-        UnityTools.DisHighLightObjects(m_EventTargets);
-    }
-
-    bool hasGetNanxianjuPos = false;
-    bool HasGetNanxianjuPosition() 
-    {
-        if (hasGetNanxianjuPos)
-            return true;
-        string eventStr = GameRuntimeData.Instance.GetModifiedEvent(1, 1);
-        if (string.IsNullOrEmpty(eventStr))
-        {
-            return false;
-        }
-        string[] tmp = eventStr.Split('_');
-        int m_InteractiveEventId = int.Parse(tmp[0]);
-        if (m_InteractiveEventId == 667) 
-        {
-            hasGetNanxianjuPos = true;
-            return true;
-        }
-        return false;
-    }
-
-    //檢測是否可以進入地圖
-    bool CheckCanEnterMap(string mapKey) 
-    {
-#if UNITY_EDITOR
-        return true;
-#endif
-
-        var runtime = GameRuntimeData.Instance;
-		var key=runtime.GetSceneEntranceCondition(mapKey);
-        if(key == 0)
-        {
-            return true;
-        }else if(key==2)
-		{
-			foreach(var role in runtime.Team)
-			{
-				if(role.Qinggong>=75) return true;
-			}
-		}
-		return false;
-    }
-
-    void ShowEnterButton(string mapKey, string command, string showText)
-    {
-        mapKey = mapKey.Replace("jyx2_BigMap", "0_BigMap"); //fix命名
-
-        if (!CheckCanEnterMap(mapKey))
-        {
-            GameUtil.DisplayPopinfo("目前还不能进入");
-            return;
-        }
-        if (string.IsNullOrEmpty(showText))
-        {
-            showText = "进入";
-        }
-            
-        Jyx2_UIManager.Instance.ShowUI(nameof(InteractUIPanel), showText, new Action(() =>
-        {
-            //记录当前地图
-            LevelMaster.LastGameMap = LevelMaster.Instance.GetCurrentGameMap();
-
-            //记录当前世界位置
-            if (LevelMaster.Instance.GetCurrentGameMap().IsWorldMap)
-            {
-                //GameRuntimeData.Instance.WorldPosition = UnityTools.Vector3ToString(LevelMaster.Instance.GetPlayerPosition());
-                Jyx2Player.GetPlayer().RecordWorldInfo();
-            }
-
-            //command 优先级高于mapKey
-            if (!string.IsNullOrEmpty(command))
-            {
-				// handle transport from indoor to sub-scene
-				// modify by eaphoneo at 2021/05/23
-				if(command.StartsWith("IndoorTransport"))
-                {
-					var curMap=LevelMaster.Instance.GetCurrentGameMap();
-					mapKey += "&transport#" + curMap.Tags.Split(',')[0];
-					LevelLoader.LoadGameMap(mapKey);
-				}else if(command.StartsWith("TransportWei")){
-					// add transport Wei to other hotel when leave hotel after meet him
-					// added by eaphone at 2021/6/5
-					TransportWei();
-					IndoorToBigMap(mapKey);
-				}else{
-					StoryEngine.Instance.ExecuteCommand(Command, null);
-				}
-            }
-            else if (!string.IsNullOrEmpty(mapKey))
-            {
-                
-                IndoorToBigMap(mapKey);
-            }
-        }));
-    }
+	[LabelText("点击时额外触发指令")] 
+	public string ExtraCommand;
 	
-    void IndoorToBigMap(string mapKey){
-		if (mapKey.StartsWith("0_BigMap") && !mapKey.Contains("transport"))
-		{
-			var currentMap = LevelMaster.Instance.GetCurrentGameMap();
-			if (!string.IsNullOrEmpty(currentMap.BigMapTriggerName))
-			{
-				mapKey += "&transport#" + currentMap.BigMapTriggerName;
-				var par=new LevelMaster.LevelLoadPara(){loadType = LevelMaster.LevelLoadPara.LevelLoadType.StartAtTrigger,triggerName=currentMap.BigMapTriggerName};
-				LevelLoader.LoadGameMap(mapKey,par);
-			}
-		}else{
-			LevelLoader.LoadGameMap(mapKey);
-		}
+	[LabelText("按钮文本")]
+	public string ButtonText;
+	
+	[LabelText("高亮的物体")]
+	public GameObject[] m_EventTargets;
+
+	private async void Start()
+	{
+		await BeforeSceneLoad.loadFinishTask;
+
+		await UniTask.Delay(TimeSpan.FromSeconds(1f)); //等1秒再生效
+		triggerEnabled = true;
 	}
 
-	// transport Wei to other hotel when leave hotel if had talked to him
-	// added by eaphone at 2021/6/5
-	public static void TransportWei(){
-		var weiPath="Dynamic/韦小宝";
-		var triggerPath="Level/Triggers";
-		var cur=LevelMaster.Instance.GetCurrentGameMap();
-		var isWeiAtCurMap=GameObject.Find(weiPath);
-		var isTalkedToWei=false;
-		if(isWeiAtCurMap!=null && isWeiAtCurMap.activeSelf){
-			var hotelList=new List<Jyx2Shop>(ConfigTable.GetAll<Jyx2Shop>());
-			LevelMasterBooster level = GameObject.FindObjectOfType<LevelMasterBooster>();
-			var ran=new System.Random();
-			var index=ran.Next(0,hotelList.Count);
-			while(cur.Jyx2MapId==hotelList[index].Id){
-				index=ran.Next(0,hotelList.Count);
-			}
-			GameObject eventsParent = GameObject.Find("Level/Triggers");
-			foreach(Transform t in eventsParent.transform)
+	private bool triggerEnabled = false;
+
+	void OnTriggerEnter(Collider other)
+	{
+		if (!triggerEnabled) return;
+		ShowEnterButton(TransportMapId, TransportTriggerName, ButtonText);
+		UnityTools.HighLightObjects(m_EventTargets, Color.red);
+	}
+
+	void OnTriggerExit(Collider other)
+	{
+		if (!triggerEnabled) return;
+		//HideEnterButton();
+		Jyx2_UIManager.Instance.HideUI(nameof(InteractUIPanel));
+		UnityTools.DisHighLightObjects(m_EventTargets);
+	}
+
+	//檢測是否可以進入地圖
+	bool CheckCanEnterMap(int mapId)
+	{
+#if UNITY_EDITOR
+		return true;
+#endif
+
+		var runtime = GameRuntimeData.Instance;
+		var key = runtime.GetSceneEntranceCondition(mapId);
+		if (key == 0)
+		{
+			return true;
+		}
+		else if (key == 2)
+		{
+			foreach (var role in runtime.Team)
 			{
-				var evt = t.GetComponent<GameEvent>();
-				if (evt == null) continue;
-				foreach (var obj in evt.m_EventTargets){
-					if (obj == null) continue;
-					var o = obj.GetComponent<InteractiveObj>();
-					if(o != null && "韦小宝"==o.name){
-						isTalkedToWei=evt.m_InteractiveEventId==938;
-						
-					}
-				}
-			}
-			if(isTalkedToWei){	
-				var curTriggerId = ConfigTable.Get<Jyx2Shop>(int.Parse(cur.Jyx2MapId)).Trigger;
-				Debug.Log("transport Wei to "+hotelList[index].Id);
-				level.ReplaceSceneObject(cur.Jyx2MapId, weiPath, "0");
-				level.ReplaceSceneObject(hotelList[index].Id, weiPath, "1");
-				GameRuntimeData.Instance.ModifyEvent(int.Parse(cur.Jyx2MapId), curTriggerId, -1, -1, -1);
-				GameRuntimeData.Instance.ModifyEvent(int.Parse(hotelList[index].Id), hotelList[index].Trigger, 937, -1, -1);
-                LevelMaster.Instance.RefreshGameEvents();
+				if (role.Qinggong >= 75) return true;
 			}
 		}
+
+		return false;
+	}
+
+	void ShowEnterButton(int transportMapId, string transportTriggerName, string showText)
+	{
+		if (!CheckCanEnterMap(transportMapId))
+		{
+			GameUtil.DisplayPopinfo("目前还不能进入");
+			return;
+		}
+		
+		if (string.IsNullOrEmpty(showText))
+		{
+			showText = "进入";
+		}
+
+		Jyx2_UIManager.Instance.ShowUI(nameof(InteractUIPanel), showText, new Action(() =>
+		{
+			DoTransport();
+		}));
+	}
+
+	public void DoTransport()
+	{
+		var curMap = LevelMaster.GetCurrentGameMap();
+			
+		Assert.IsNotNull(curMap);
+			
+		var nextMap = Jyx2ConfigMap.Get(TransportMapId);
+
+		if (nextMap == null)
+		{
+			Debug.LogError($"错误，地图id={TransportMapId}未定义");
+			return;
+		}
+			
+		//记录当前地图
+		LevelMaster.LastGameMap = curMap;
+			
+		//记录当前世界位置
+		if (curMap.IsWorldMap())
+		{
+			Jyx2Player.GetPlayer().RecordWorldInfo();
+		}
+
+		LevelMaster.LevelLoadPara para = new LevelMaster.LevelLoadPara();
+		para.loadType = LevelMaster.LevelLoadPara.LevelLoadType.StartAtTrigger;
+		if (!string.IsNullOrEmpty(TransportTriggerName))
+		{
+			para.triggerName = TransportTriggerName;
+		}else if (curMap.IsWorldMap())
+		{
+			para.triggerName = "Leave";
+		}else if (nextMap.IsWorldMap())
+		{
+			para.triggerName = curMap.Name;
+		}
+
+		//额外触发指令
+		if (!string.IsNullOrEmpty(ExtraCommand))
+		{
+			Jyx2Console.RunConsoleCommand(ExtraCommand);
+		}
+			
+		//开始加载
+		LevelLoader.LoadGameMap(nextMap, para);
 	}
 }

@@ -1,3 +1,4 @@
+#if JYX2_USE_HSFRAMEWORK
 /*
  * 金庸群侠传3D重制版
  * https://github.com/jynew/jynew
@@ -15,6 +16,7 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using HSFrameWork.ConfigTable;
 using Jyx2;
+using Jyx2Configs;
 
 namespace Jyx2
 {
@@ -42,7 +44,7 @@ namespace Jyx2
 			var result=Name;
             if (!string.IsNullOrEmpty(Jyx2MapId))
             {
-                result=ConfigTable.Get<Jyx2Map>(Jyx2MapId).Name;
+                result=GameConfigDatabase.Instance.Get<Jyx2ConfigMap>(Jyx2MapId).Name;
             }
 			if ("小虾米居".Equals(result)) result=GameRuntimeData.Instance.Player.Name+"居";
 
@@ -63,7 +65,8 @@ namespace Jyx2
 
             m_isWorldMap = Tags.Contains("WORLDMAP");
         }
-
+        
+/*
 		//获得开场地图
 		public static GameMap GetGameStartMap()
         {
@@ -76,13 +79,14 @@ namespace Jyx2
             }
             return null;
         }
-
+        
+        
         public string GetEnterMusic()
         {
             if(!string.IsNullOrEmpty(Jyx2MapId))
             {
-                var map = ConfigTable.Get<Jyx2Map>(Jyx2MapId);
-
+                var map = GameConfigDatabase.Instance.Get<Jyx2ConfigMap>(Jyx2MapId);
+                
                 if (map == null || map.InMusic < 0)
                     return string.Empty;
 
@@ -95,6 +99,7 @@ namespace Jyx2
             }
         }
 
+        
         //强制设置离开音乐
         public int ForceSetLeaveMusicId = -1;
 
@@ -119,8 +124,9 @@ namespace Jyx2
             {
                 return string.Empty;
             }
-        }
+        }*/
 
         bool m_isWorldMap = false;
     }
 }
+#endif

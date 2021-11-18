@@ -15,6 +15,7 @@ using UnityEngine.UI;
 using DG.Tweening;
 using HSFrameWork.ConfigTable;
 using System;
+using Jyx2Configs;
 
 public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
 {
@@ -70,12 +71,11 @@ public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
         RoleInstance role = GameRuntimeData.Instance.Player;
         Name_Text.text = role.Name;
         
-        GameMap map = LevelMaster.Instance.GetCurrentGameMap();
+        var map = LevelMaster.GetCurrentGameMap();
         if (map != null)
         {
             MapName_Text.text = map.GetShowName();
-            bool isWorldMap = map.IsWorldMap;
-            
+
             //BY CGGG：小地图不提供传送到大地图的功能 2021/6/13
             //MapButton_Button.gameObject.SetActive(!isWorldMap);
             MapButton_Button.gameObject.SetActive(false);
@@ -100,7 +100,7 @@ public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
     {
         if (id == -1) return;
 
-        var item = ConfigTable.Get<Jyx2Item>(id);
+        var item = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(id);
         if (item == null)
         {
             Debug.LogError("use item error, id=" + id);
@@ -108,7 +108,7 @@ public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
         }
 
         //剧情类和暗器不能使用
-        if (item.ItemType == 0 || item.ItemType == 4)
+        if ((int)item.ItemType == 0 || (int)item.ItemType == 4)
         {
             GameUtil.DisplayPopinfo("此道具不能在此使用");
             return;
@@ -118,13 +118,15 @@ public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
         GameUtil.SelectRole(runtime.Team, (selectRole) => {
             if (selectRole == null) return;
 
+            if (selectRole.GetJyx2RoleId() == item.User) return;
+
             if (selectRole.CanUseItem(id))
             {
                 //装备
-                if (item.ItemType == 1)
+                if ((int)item.ItemType == 1)
                 {
                     //武器
-                    if (item.EquipmentType == 0)
+                    if ((int)item.EquipmentType == 0)
                     {
                         if (item.User != -1)
                         {
@@ -139,7 +141,7 @@ public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
                         item.User = selectRole.GetJyx2RoleId();
                     }
                     //防具
-                    else if (item.EquipmentType == 1)
+                    else if ((int)item.EquipmentType == 1)
                     {
                         if (item.User != -1)
                         {
@@ -155,24 +157,26 @@ public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
                     }
                 }
                 //修炼
-                else if (item.ItemType == 2)
+                else if ((int)item.ItemType == 2)
                 {
                     if (item.User != -1)
                     {
                         RoleInstance roleInstance = runtime.GetRoleInTeam(item.User);
                         item.User = -1;
+                        roleInstance.ExpForItem = 0;
                         roleInstance.Xiulianwupin = -1;
                     }
 
                     if (selectRole.GetXiulianItem() != null)
                     {
                         selectRole.GetXiulianItem().User = -1;
+                        selectRole.ExpForItem = 0;
                     }
                     selectRole.Xiulianwupin = id;
                     item.User = selectRole.GetJyx2RoleId();
                 }
                 //药品
-                else if (item.ItemType == 3)
+                else if ((int)item.ItemType == 3)
                 {
                     selectRole.UseItem(item);
                     runtime.AddItem(id, -1);
@@ -190,21 +194,18 @@ public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
     void OnMapBtnClick() 
     {
         var levelMaster = LevelMaster.Instance;
-        if (!levelMaster.GetCurrentGameMap().IsWorldMap)
+
+        if (levelMaster.IsInWorldMap)
+            return;
+        
+        //执行离开事件
+        foreach (var zone in FindObjectsOfType<BigMapZone>())
         {
-            levelMaster.PlayLeaveMusic(levelMaster.GetCurrentGameMap());
-            // return to entertrance
-			// modified by eaphone at 2021/05/30
-            //LevelLoader.LoadGameMap("0_BigMap");
-			// add transport Wei to other hotel when leave hotel after meet him
-			// added by eaphone at 2021/6/5
-			string[] targetHotel={"01_heluokezhan","03_youjiankezhan","40_yuelaikezhan","60_longmenkezhan","61_gaoshengkezhan"};
-			foreach(var i in targetHotel){
-				if(i == levelMaster.GetCurrentGameMap().Key){
-					BigMapZone.TransportWei();
-				}
-			}
-            levelMaster.QuitToBigMap();
+            if (zone.TransportMapId == GameConst.WORLD_MAP_ID)
+            {
+                zone.DoTransport();
+                break;
+            }
         }
     }
 

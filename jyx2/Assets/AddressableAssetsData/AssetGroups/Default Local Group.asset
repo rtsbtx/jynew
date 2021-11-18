@@ -75,27 +75,27 @@ MonoBehaviour:
     m_Address: Assets/BuildSource/SoundEffect
     m_ReadOnly: 0
     m_SerializedLabels: []
-    m_MainAsset: {fileID: 102900000, guid: cb842fc88c4d6854cb9d4bb7b387bfb9, type: 3}
-    m_TargetAsset: {fileID: 102900000, guid: cb842fc88c4d6854cb9d4bb7b387bfb9, type: 3}
+    m_MainAsset: {fileID: 0}
+    m_TargetAsset: {fileID: 0}
   - m_GUID: 44dc9469c6fc7f74da352dcad40c12c3
     m_Address: Assets/Jyx2Effect
     m_ReadOnly: 0
     m_SerializedLabels: []
-    m_MainAsset: {fileID: 102900000, guid: 44dc9469c6fc7f74da352dcad40c12c3, type: 3}
-    m_TargetAsset: {fileID: 102900000, guid: 44dc9469c6fc7f74da352dcad40c12c3, type: 3}
+    m_MainAsset: {fileID: 0}
+    m_TargetAsset: {fileID: 0}
   - m_GUID: 195a46071bb2ea947b696d43e681d608
     m_Address: Assets/BuildSource/UI
     m_ReadOnly: 0
     m_SerializedLabels:
     - Images
-    m_MainAsset: {fileID: 102900000, guid: 195a46071bb2ea947b696d43e681d608, type: 3}
-    m_TargetAsset: {fileID: 102900000, guid: 195a46071bb2ea947b696d43e681d608, type: 3}
+    m_MainAsset: {fileID: 0}
+    m_TargetAsset: {fileID: 0}
   - m_GUID: e53b1a87c12550645be9a654457551f4
     m_Address: Assets/BuildSource/Animations
     m_ReadOnly: 0
     m_SerializedLabels: []
-    m_MainAsset: {fileID: 102900000, guid: e53b1a87c12550645be9a654457551f4, type: 3}
-    m_TargetAsset: {fileID: 102900000, guid: e53b1a87c12550645be9a654457551f4, type: 3}
+    m_MainAsset: {fileID: 0}
+    m_TargetAsset: {fileID: 0}
   - m_GUID: e612d2946f08d7346912cdad95169755
     m_Address: Assets/BuildSource/ModelWeapons
     m_ReadOnly: 0
@@ -120,17 +120,11 @@ MonoBehaviour:
     m_SerializedLabels: []
     m_MainAsset: {fileID: 0}
     m_TargetAsset: {fileID: 0}
-  - m_GUID: 6e3891a16a6b7a84198f5cbdd8a25d59
-    m_Address: Assets/BuildSource/Skills
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - skills
-    m_MainAsset: {fileID: 0}
-    m_TargetAsset: {fileID: 0}
   - m_GUID: db0f4026843c435428869e55314423e0
     m_Address: Assets/BuildSource/Configs
     m_ReadOnly: 0
-    m_SerializedLabels: []
+    m_SerializedLabels:
+    - configs
     m_MainAsset: {fileID: 0}
     m_TargetAsset: {fileID: 0}
   - m_GUID: f97fab60b5306c44e8f24d10a8c505b9
@@ -153,6 +147,19 @@ MonoBehaviour:
     m_TargetAsset: {fileID: 0}
   - m_GUID: f9568c6f93a96634289fefba7b82f055
     m_Address: Assets/Scripts
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    m_MainAsset: {fileID: 0}
+    m_TargetAsset: {fileID: 0}
+  - m_GUID: 6e3891a16a6b7a84198f5cbdd8a25d59
+    m_Address: Assets/BuildSource/Skills
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - skills
+    m_MainAsset: {fileID: 0}
+    m_TargetAsset: {fileID: 0}
+  - m_GUID: 54813c292f29b2d48a320c7afd57af2e
+    m_Address: Assets/BuildSource/RELEASE_NOTE.txt
     m_ReadOnly: 0
     m_SerializedLabels: []
     m_MainAsset: {fileID: 0}

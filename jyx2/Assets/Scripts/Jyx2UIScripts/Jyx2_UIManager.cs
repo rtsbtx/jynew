@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 
 public enum UILayer 
 {
@@ -61,7 +62,8 @@ public class Jyx2_UIManager : MonoBehaviour
 
     public void GameStart() 
     {
-        Jyx2_UIManager.Instance.ShowUI(nameof(GameMainMenu), $"当前版本：{Application.version}");
+        Jyx2_UIManager.Instance.ShowUI(nameof(GameMainMenu));
+        Jyx2_UIManager.Instance.ShowUI(nameof(GameInfoPanel),$"当前版本：{Application.version}");
         GraphicSetting.GlobalSetting.Execute();
     }
 
@@ -109,6 +111,33 @@ public class Jyx2_UIManager : MonoBehaviour
         }
     }
 
+    public async UniTask ShowUIAsync(string uiName, params object[] allParams)
+    {
+        Jyx2_UIBase uibase;
+        if (m_uiDic.ContainsKey(uiName))
+        {
+            uibase = m_uiDic[uiName];
+            if (uibase.IsOnly)//如果这个层唯一存在 那么先关闭其他
+                PopAllUI(uibase.Layer);
+            PushUI(uibase);
+            uibase.Show(allParams);
+        }
+        else
+        {
+            if (_loadingUIParams.ContainsKey(uiName)) //如果正在加载这个UI 那么覆盖参数
+            {
+                _loadingUIParams[uiName] = allParams;
+                return;
+            }
+
+            _loadingUIParams[uiName] = allParams;
+            string uiPath = string.Format(GameConst.UI_PREFAB_PATH, uiName);
+
+            var go = await Addressables.InstantiateAsync(uiPath).Task;
+            OnUILoaded(go);
+        }
+    }
+
     //UI加载完后的回调
     void OnUILoaded(GameObject go) 
     {
@@ -133,8 +162,7 @@ public class Jyx2_UIManager : MonoBehaviour
     //显示主界面 LoadingPanel中加载完场景调用 移到这里来 方便修改
     public void ShowMainUI()
     {
-        var levelMaster = LevelMaster.Instance;
-        var map = levelMaster.GetCurrentGameMap();
+        var map = LevelMaster.GetCurrentGameMap();
         if (map == null)
         {
             //this.HideUI("MainUIPanel");

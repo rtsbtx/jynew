@@ -105,23 +105,23 @@ namespace Jyx2Editor
 
             if (string.IsNullOrEmpty(path))
                 return;
-            
-            RmStreamAssetFolder();
 
             //重新生成Addressable相关文件
             AddressableAssetSettings.BuildPlayerContent();
 
             //强制GENDATA
-            GenDataMenuCmd.GenerateDataForce();
+            //GenDataMenuCmd.GenerateDataForce();
 
             // 处理场景文件
             //AddScenesToBuildTool.AddScenesToBuild();
 
             string currentDate = DateTime.Now.ToString("yyyyMMdd");
-            string exePath = path + $"/jyx2-{currentDate}.exe";
 
             //设置版本号
             PlayerSettings.bundleVersion = currentDate;
+            
+            //exe路径
+            string exePath = path + $"/jynew.exe";
 
             //打包
             BuildPipeline.BuildPlayer(GetScenePaths(), exePath, BuildTarget.StandaloneWindows64, BuildOptions.None);
@@ -160,8 +160,6 @@ namespace Jyx2Editor
 
                 if (string.IsNullOrEmpty(path))
                     return;
-                
-                RmStreamAssetFolder();
 
                 //生成luaWrap
                 //Generator.ClearAll();
@@ -171,7 +169,7 @@ namespace Jyx2Editor
                 AddressableAssetSettings.BuildPlayerContent();
 
                 //强制GENDATA
-                GenDataMenuCmd.GenerateDataForce();
+                //GenDataMenuCmd.GenerateDataForce();
 
                 // 处理场景文件
                 //AddScenesToBuildTool.AddScenesToBuild();
@@ -221,8 +219,6 @@ namespace Jyx2Editor
 
                 if (string.IsNullOrEmpty(path))
                     return;
-                
-                RmStreamAssetFolder();
 
                 //生成luaWrap
                 //Generator.ClearAll();
@@ -232,7 +228,7 @@ namespace Jyx2Editor
                 AddressableAssetSettings.BuildPlayerContent();
 
                 //强制GENDATA
-                GenDataMenuCmd.GenerateDataForce();
+                //GenDataMenuCmd.GenerateDataForce();
 
                 // 处理场景文件
                 //AddScenesToBuildTool.AddScenesToBuild();
@@ -258,14 +254,6 @@ namespace Jyx2Editor
                 Debug.LogError(e.StackTrace);
             }
         }
-
-        public static void RmStreamAssetFolder()
-        {
-            return;
-            if (Directory.Exists(Application.streamingAssetsPath))
-            {
-                Directory.Delete(Application.streamingAssetsPath, true);
-            }
-        }
+        
     }
 }

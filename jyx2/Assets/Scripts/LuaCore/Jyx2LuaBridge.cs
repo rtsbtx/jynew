@@ -27,6 +27,7 @@ using UnityEngine.Playables;
 using Sirenix.Utilities;
 using UnityEngine.Timeline;
 using Cysharp.Threading.Tasks;
+using Jyx2Configs;
 
 namespace Jyx2
 {
@@ -75,7 +76,7 @@ namespace Jyx2
         {
             RunInMainThread(() =>
             {
-                var item = ConfigTable.Get<Jyx2Item>(itemId);
+                var item = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(itemId);
                 if (item == null)
                 {
                     Debug.LogError("调用了未定义的物品:" + itemId);
@@ -118,7 +119,7 @@ namespace Jyx2
                 //场景ID
                 if(scene == -2) //当前场景
                 {
-                    scene = int.Parse(LevelMaster.Instance.GetCurrentGameMap().Jyx2MapId);
+                    scene = LevelMaster.GetCurrentGameMap().Id;
 					isCurrentScene=true;
                 }
 
@@ -137,7 +138,7 @@ namespace Jyx2
 					evt=GameEventManager.GetGameEventByID(eventId.ToString());
 				}
 				
-				if(isCurrentScene && evt!=null)//非当前场景事件如何获取
+				if(isCurrentScene && evt!=null)//当前场景事件如何获取
 				{
 					if(interactiveEventId==-2){
 						interactiveEventId=evt.m_InteractiveEventId;
@@ -151,6 +152,24 @@ namespace Jyx2
 						enterEventId=evt.m_EnterEventId;
 					}
 				}
+                // 非当前场景事件如何获取
+                else
+                {
+                    if (interactiveEventId == -2)
+                    {
+                        interactiveEventId = -1;
+                    }
+
+                    if (useItemEventId == -2)
+                    {
+                        useItemEventId = -1;
+                    }
+
+                    if (enterEventId == -2)
+                    {
+                        enterEventId = -1;
+                    }
+                }
 
                 //更新全局记录
                 runtime.ModifyEvent(scene, eventId, interactiveEventId, useItemEventId, enterEventId);
@@ -201,13 +220,18 @@ namespace Jyx2
                 var pos = LevelMaster.Instance.GetPlayerPosition();
                 string posStr = UnityTools.Vector3ToString(pos);
                 string posOri = UnityTools.QuaternionToString(LevelMaster.Instance.GetPlayerOrientation());
-                string currentScene = SceneManager.GetActiveScene().name;
-                LevelLoader.LoadBattle(battleId, (ret) => {
-                    LevelLoader.LoadGameMap(ConfigTable.Get<GameMap>(currentScene), new LevelMaster.LevelLoadPara() {
+
+                Jyx2ConfigMap currentMap = LevelMaster.GetCurrentGameMap();
+
+                LevelLoader.LoadBattle(battleId, (ret) =>
+                {
+                    LevelLoader.LoadGameMap(currentMap, new LevelMaster.LevelLoadPara()
+                    {
                         loadType = LevelMaster.LevelLoadPara.LevelLoadType.StartAtPos,
                         CurrentPos = posStr,
-						CurrentOri = posOri,
-                    }, "", ()=> {
+                        CurrentOri = posOri,
+                    }, () =>
+                    {
                         isWin = (ret == BattleResult.Win);
                         Next();
                     });
@@ -221,7 +245,7 @@ namespace Jyx2
         public static void ChangeMMapMusic(int musicId)
         {
             RunInMainThread(() => {
-                LevelMaster.Instance.GetCurrentGameMap().ForceSetLeaveMusicId = musicId;
+                LevelMaster.GetCurrentGameMap().ForceSetLeaveMusicId = musicId;
             });
         }
 
@@ -240,23 +264,23 @@ namespace Jyx2
                     RoleInstance role = runtime.GetRole(roleId);
                     storyEngine.DisplayPopInfo(role.Name + "加入队伍！");
 
-                    //同时获得对方身上的物品
-                    foreach (var item in role.Items)
+                    if (role.AlreadyJoinedTeam == 0)
                     {
-                        if(item.IsAdd != 1)
+                        //同时获得对方身上的物品
+                        foreach (var item in role.Items)
                         {
                             if (item.Count == 0) item.Count = 1;
-                            AddItem(item.Id, item.Count);
-                            item.IsAdd = 1;
+                            AddItem(item.Item.Id, item.Count);
                             item.Count = 0;
                         }
+                        role.AlreadyJoinedTeam = 1;
                     }
-                    
+
                     //清空角色身上的装备
                     role.Weapon = -1;
                     role.Armor = -1;
                     role.Xiulianwupin = -1;
-                    
+
                     role.Items.Clear();    
                 }
                 
@@ -358,7 +382,7 @@ namespace Jyx2
                 //场景ID
                 if (scene == -2) //当前场景
                 {
-                    scene = int.Parse(LevelMaster.Instance.GetCurrentGameMap().Jyx2MapId);
+                    scene = LevelMaster.GetCurrentGameMap().Id;
 					isCurrentScene=true;
                 }
 
@@ -425,7 +449,7 @@ namespace Jyx2
 				//场景ID
                 if (scene == -2) //当前场景
                 {
-                    scene = int.Parse(LevelMaster.Instance.GetCurrentGameMap().Jyx2MapId);
+                    scene = LevelMaster.GetCurrentGameMap().Id;
                 }
 
                 //事件ID
@@ -506,7 +530,11 @@ namespace Jyx2
 
         public static bool JudgeAttack(int roleId,int low,int high)
         {
-            bool ret = JudgeRoleValue(roleId, (r) => { return r.Attack >= low && r.Attack <= high; });
+            bool ret = JudgeRoleValue(roleId, (r) => {
+                int originAttack = r.Attack - r.GetWeaponProperty("Attack") - r.GetArmorProperty("Attack");
+
+                return originAttack >= low && originAttack <= high;
+            });
             return ret;
         }
 
@@ -537,7 +565,7 @@ namespace Jyx2
                 //只有设置了显示，并且角色在队伍的时候才显示
                 if(noDisplay != 0 && runtime.IsRoleInTeam(roleId))
                 {
-                    var skill = ConfigTable.Get<Jyx2Skill>(magicId);
+                    var skill = GameConfigDatabase.Instance.Get<Jyx2ConfigSkill>(magicId);
                     storyEngine.DisplayPopInfo(role.Name + "习得武学" + skill.Name);
                 }
                 Next();
@@ -624,7 +652,7 @@ namespace Jyx2
         }
 
         //内力
-        public static void AddMaxMp(int roleId, int value)
+        public static void AddMp(int roleId, int value)
         {
             RunInMainThread(() =>
             {
@@ -714,14 +742,14 @@ namespace Jyx2
         //打开所有场景
         public static void OpenAllScene()
         {
-            foreach(var map in ConfigTable.GetAll<Jyx2Map>())
+            foreach(var map in GameConfigDatabase.Instance.GetAll<Jyx2ConfigMap>())
             {
                 runtime.SetSceneEntraceCondition(map.Id, 0);
             }
-            runtime.SetSceneEntraceCondition("2", 2); //云鹤崖 需要轻功大于75
-            runtime.SetSceneEntraceCondition("38", 2); //摩天崖 需要轻功大于75
-            runtime.SetSceneEntraceCondition("75", 1); //桃花岛
-            runtime.SetSceneEntraceCondition("80", 1); //绝情谷底
+            runtime.SetSceneEntraceCondition(2, 2); //云鹤崖 需要轻功大于75
+            runtime.SetSceneEntraceCondition(38, 2); //摩天崖 需要轻功大于75
+            runtime.SetSceneEntraceCondition(75, 1); //桃花岛
+            runtime.SetSceneEntraceCondition(80, 1); //绝情谷底
         }
 
         //武林大会
@@ -825,7 +853,7 @@ namespace Jyx2
 				//场景ID
                 if(scene == -2) //当前场景
                 {
-                    scene = int.Parse(LevelMaster.Instance.GetCurrentGameMap().Jyx2MapId);
+                    scene = LevelMaster.GetCurrentGameMap().Id;
                 }
 
                 //事件ID
@@ -876,7 +904,7 @@ namespace Jyx2
         //标记一个场景是否可以进入
         public static void OpenScene(int sceneId)
         {
-            runtime.SetSceneEntraceCondition(sceneId.ToString(), 0);
+            runtime.SetSceneEntraceCondition(sceneId, 0);
         }
 
 		// modify by eaphone at 2021/6/5
@@ -982,7 +1010,7 @@ namespace Jyx2
         public static void AddItem(int itemId, int count)
         {
             RunInMainThread(() => {
-                var item = ConfigTable.Get<Jyx2Item>(itemId);
+                var item = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(itemId);
                 if (item == null)
                 {
                     Debug.LogError("调用了未定义的物品:" + itemId);
@@ -1029,8 +1057,8 @@ namespace Jyx2
 					return;
 				}
 
-				string mapId = LevelMaster.Instance.GetCurrentGameMap().Jyx2MapId;
-				var hasData = ConfigTable.Has<Jyx2Shop>(mapId); // mapId和shopId对应
+				string mapId = LevelMaster.GetCurrentGameMap().Id.ToString();
+				var hasData = GameConfigDatabase.Instance.Has<Jyx2ConfigShop>(mapId); // mapId和shopId对应
                 if (!hasData)
                 {
 					storyEngine.DisplayPopInfo($"地图{mapId}没有配置商店，可在excel/JYX2小宝商店.xlsx中查看");
@@ -1405,6 +1433,16 @@ namespace Jyx2
 			return true;
 		}
 
+        public static void jyx2_ShowEndScene()
+        {
+            DarkScence();
+            RunInMainThread(() => {
+                Jyx2_UIManager.Instance.ShowUI(nameof(TheEnd));
+            });
+            jyx2_Wait(1);
+            LightScence();
+        }
+
         #endregion
 
 
@@ -1442,7 +1480,7 @@ namespace Jyx2
             {
                 List<string> selectionContent = new List<string>() { "是(Y)", "否(N)" };
                 storyEngine.BlockPlayerControl = true;
-                Jyx2_UIManager.Instance.ShowUI(nameof(ChatUIPanel), ChatType.Selection, "主角", selectMessage, selectionContent, new Action<int>((index) =>
+                Jyx2_UIManager.Instance.ShowUI(nameof(ChatUIPanel), ChatType.Selection, "0", selectMessage, selectionContent, new Action<int>((index) =>
                 {
                     _selectResult = index;
                     storyEngine.BlockPlayerControl = false;

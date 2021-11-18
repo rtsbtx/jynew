@@ -13,6 +13,7 @@ using Cysharp.Threading.Tasks;
 using HanSquirrel.ResourceManager;
 using HSFrameWork.ConfigTable;
 using Jyx2;
+using Jyx2Configs;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -21,68 +22,68 @@ namespace Jyx2
     public class LevelLoader
     {
         //加载地图
-        public static void LoadGameMap(GameMap map, LevelMaster.LevelLoadPara para = null, string command = "", Action callback = null)
+        public static void LoadGameMap(Jyx2ConfigMap map, LevelMaster.LevelLoadPara para = null, Action callback = null)
         {
-            if (para == null)
-                para = new LevelMaster.LevelLoadPara(); //默认生成一份
+            LevelMaster.loadPara = para != null ? para : new LevelMaster.LevelLoadPara(); //默认生成一份
 
-            LevelMaster.loadPara = para;
-
+            var runtime = GameRuntimeData.Instance;
+            
             //存储结构
-            if (GameRuntimeData.Instance != null)
+            if (runtime != null)
             {
                 //存储上一个地图
-                GameRuntimeData.Instance.PrevMap = GameRuntimeData.Instance.CurrentMap;
+                runtime.PrevMap = runtime.CurrentMap;
 
                 //切换当前地图
                 if (map != null)
                 {
-                    GameRuntimeData.Instance.CurrentMap = map.Key;
+                    runtime.CurrentMap = map.Id.ToString();
                 }
             }
 
-            if (string.IsNullOrEmpty(command))
-                LoadingPanel.Create(map.Key, callback);
-            else
-                LoadingPanel.Create($"{map.Key}&{command}", callback);            
+            DoLoad(map, callback).Forget();
         }
 
-        /// <summary>
-        /// 加载地图
-        /// </summary>
-        /// <param name="levelKey"></param>
-        /// <param name="fromPosTag">是否从存档中取出生点</param>
-        public static void LoadGameMap(string levelKey, LevelMaster.LevelLoadPara para = null)
+        static async UniTask DoLoad(Jyx2ConfigMap map, Action callback)
         {
-            if (para == null)
-                para = new LevelMaster.LevelLoadPara(); //默认生成一份
-            var mapKey = levelKey.Contains("&") ? levelKey.Split('&')[0] : levelKey;
-            var command = levelKey.Contains("&") ? levelKey.Split('&')[1] : "";
-            LoadGameMap(ConfigTable.Get<GameMap>(mapKey), para, command);
+            LevelMaster.SetCurrentMap(map);
+            await LoadingPanel.Create(map.MapScene);
+            callback?.Invoke();
         }
-
+        
         //加载战斗
         public static void LoadBattle(int battleId, Action<BattleResult> callback)
         {
-            var battle = ConfigTable.Get<Jyx2Battle>(battleId);
-
-            string sceneName = "Jyx2Battle_" + battle.MapId;
-
-            //记住当前的音乐，战斗后还原
-            var formalMusic = AudioManager.GetCurrentMusic();
-
-            LoadingPanel.Create(sceneName, ()=> {
-
-                GameObject obj = new GameObject("BattleLoader");
-                var battleLoader = obj.AddComponent<BattleLoader>();
-                battleLoader.m_BattleId = battleId;
-                battleLoader.Callback = (rst) =>
-                {
-                    AudioManager.PlayMusicAtPath(formalMusic).Forget();
-                    callback(rst);
-                };
-
-            });
+            var battle = GameConfigDatabase.Instance.Get<Jyx2ConfigBattle>(battleId);
+            if (battle == null)
+            {
+                Debug.LogError($"战斗id={battleId}未定义");
+                return;
+            }
+            
+            DoloadBattle(battle, callback).Forget();
         }
+
+        private static async UniTask DoloadBattle(Jyx2ConfigBattle battle, Action<BattleResult> callback)
+        {
+            var formalMusic = AudioManager.GetCurrentMusic(); //记住当前的音乐，战斗后还原
+
+            LevelMaster.IsInBattle = true;
+            await LoadingPanel.Create(battle.MapScene);
+                
+            GameObject obj = new GameObject("BattleLoader");
+            var battleLoader = obj.AddComponent<BattleLoader>();
+            battleLoader.m_BattleId = battle.Id;
+                
+            //播放之前的地图音乐
+            battleLoader.Callback = (rst) =>
+            {
+                LevelMaster.IsInBattle = false;
+                AudioManager.PlayMusic(formalMusic);
+                callback(rst);
+            };
+        }
+        
+        
     }
 }

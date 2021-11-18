@@ -12,6 +12,7 @@ using Jyx2;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -51,7 +52,7 @@ public class RoleUIItem : MonoBehaviour
 
         ShowProperty();
 
-        Jyx2ResourceHelper.GetRoleHeadSprite(role, m_roleHead);
+        m_roleHead.LoadAsyncForget(role.Data.GetPic());
     }
 
     void ShowProperty() 
@@ -71,7 +72,7 @@ public class RoleUIItem : MonoBehaviour
             }
             else if (proItem.PropertyName == "Tili")
             {
-                sb.Append($"{proItem.Name}:{m_role.Tili}/{GameConst.MaxTili}\n");
+                sb.Append($"{proItem.Name}:{m_role.Tili}/{GameConst.MAX_ROLE_TILI}\n");
             }
             else if (proItem.PropertyName == "Mp")
             {

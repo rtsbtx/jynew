@@ -20,7 +20,45 @@ using UnityEngine.AddressableAssets;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
-static public class Jyx2ResourceHelper
+namespace Jyx2
+{
+    public static class ImageLoadHelper
+    {
+        public static void LoadAsyncForget(this Image image, UniTask<Sprite> task)
+        {   
+            LoadAsync(image,task).Forget();
+        }
+        
+        public static async UniTask LoadAsync(this Image image, UniTask<Sprite> task)
+        {
+            image.gameObject.SetActive(false);
+            image.sprite = await task;
+            image.gameObject.SetActive(true);
+        }
+        
+        public static void LoadAsyncForget(this Image image, AssetReference reference)
+        {
+            LoadAsync(image, reference).Forget();
+        }
+    
+        public static async UniTask LoadAsync(this Image image, AssetReference reference)
+        {
+            image.gameObject.SetActive(false);
+            image.sprite = await LoadSprite(reference);
+            image.gameObject.SetActive(true);
+        }
+        
+        public static async UniTask<Sprite> LoadSprite(AssetReference refernce)
+        {
+            //注：不Release的话，Addressable会进行缓存
+            //https://forum.unity.com/threads/1-15-1-assetreference-not-allow-loadassetasync-twice.959910/
+
+            return await Addressables.LoadAssetAsync<Sprite>(refernce);
+        }
+    }
+}
+
+public static class Jyx2ResourceHelper
 {
     private static Dictionary<string, GameObject> cachedPrefabs;
 
@@ -52,14 +90,14 @@ static public class Jyx2ResourceHelper
         }
 
         //技能池
-        var task = await Addressables.LoadAssetsAsync<Jyx2SkillDisplayAsset>("skills", null).Task;
+        var task = await Addressables.LoadAssetsAsync<Jyx2SkillDisplayAsset>("skills", null);
         if (task != null)
         {
             Jyx2SkillDisplayAsset.All = task;
         }
 
         //全局配置表
-        var t = await Addressables.LoadAssetAsync<GlobalAssetConfig>("Assets/BuildSource/Configs/GlobalAssetConfig.asset").Task;
+        var t = await Addressables.LoadAssetAsync<GlobalAssetConfig>("Assets/BuildSource/Configs/GlobalAssetConfig.asset");
         if (t != null)
         {
             GlobalAssetConfig.Instance = t;
@@ -89,12 +127,6 @@ static public class Jyx2ResourceHelper
         //LeanPool.Despawn(obj);
     }
 
-    public static async UniTask<Sprite> GetRoleHeadSprite(string path)
-    {
-        string p = "Assets/BuildSource/head/" + path + ".png";
-        return await Addressables.LoadAssetAsync<Sprite>(p).Task;
-    }
-
     [Obsolete("待修改为tilemap")]
     public static void GetSceneCoordDataSet(string sceneName, Action<SceneCoordDataSet> callback)
     {
@@ -118,36 +150,6 @@ static public class Jyx2ResourceHelper
             var obj = r.Result.bytes.Deserialize<BattleboxDataset>();
             callback(obj);
         };
-    }
-
-    public static UniTask<Sprite> GetSprite(RoleInstance role)
-    {
-        if (role.Key == GameRuntimeData.Instance.Player.Key)
-        {
-            return GetRoleHeadSprite(GameRuntimeData.Instance.Player.HeadAvata);
-        }
-        else
-        {
-            return GetRoleHeadSprite(role.HeadAvata);
-        }
-    }
-
-
-    public static void GetRoleHeadSprite(RoleInstance role, Image setImage)
-    {
-        DoGetRoleHeadSprite(role,setImage).Forget();
-    }
-
-    private static async UniTaskVoid DoGetRoleHeadSprite(RoleInstance role, Image setImage)
-    {
-        var sprite = await GetSprite(role);
-        setImage.sprite = sprite;
-    }
-
-    public static async UniTask<Sprite> LoadItemSprite(int itemId)
-    {
-        string p = ("Assets/BuildSource/Jyx2Items/" + itemId + ".png");
-        return await Addressables.LoadAssetAsync<Sprite>(p).Task;
     }
 
     public static void SpawnPrefab(string path, Action<GameObject> callback)

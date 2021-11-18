@@ -30,8 +30,8 @@ public partial class GameMainMenu
 	private Button YesBtn_Button;
 	private RectTransform PropertyItem_RectTransform;
 	private RectTransform PropertyRoot_RectTransform;
-	private Text Version_Text;
 	private Text LoadingText;
+	private ReleaseNotePanel ReleaseNote_Panel;
 
 	public void InitTrans()
 	{
@@ -53,8 +53,7 @@ public partial class GameMainMenu
 		YesBtn_Button = transform.Find("StartNewRolePanel/YesBtn").GetComponent<Button>();
 		PropertyItem_RectTransform = transform.Find("StartNewRolePanel/PropertyItem").GetComponent<RectTransform>();
 		PropertyRoot_RectTransform = transform.Find("StartNewRolePanel/PropertyRoot").GetComponent<RectTransform>();
-		Version_Text = transform.Find("mainPanel/homeBtnAndTxtPanel/VersionText").GetComponent<Text>();
-		
 		LoadingText = transform.Find("mainPanel/LoadingText").GetComponent<Text>();
+		ReleaseNote_Panel = transform.Find("ReleaseNotePanel").GetComponent<ReleaseNotePanel>();
 	}
 }

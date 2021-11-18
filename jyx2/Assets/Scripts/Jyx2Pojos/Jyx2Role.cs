@@ -15,8 +15,10 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using HSFrameWork.ConfigTable;
 
+#if JYX2_USE_HSFRAMEWORK
 namespace Jyx2
 {
+    //[Obsolete]
     [XmlType("jyx2role")]
     public class Jyx2Role : BaseBean
     {
@@ -149,35 +151,6 @@ namespace Jyx2
         [XmlElement("Items")]
         public List<Jyx2RoleItem> Items; //道具
 
-		
-        //立绘
-        public string GetHeadAvata()
-        {
-            return ConfigTable.Get<Jyx2RoleHeadMapping>(Head).HeadAvata;
-        }
-
-        //模型配置
-        public string GetModelAsset()
-        {
-            return ConfigTable.Get<Jyx2RoleHeadMapping>(Head).ModelAsset;
-        }
-        
-        //模型
-        public string GetModel()
-        {
-            return ConfigTable.Get<Jyx2RoleHeadMapping>(Head).Model;
-        }
-
-        public string GetWeaponMount()
-        {
-            return ConfigTable.Get<Jyx2RoleHeadMapping>(Head).WeaponMount;
-        }
-
-        public string GetBattleAnimator()
-        {
-            return ConfigTable.Get<Jyx2RoleHeadMapping>(Head).BattleAnimator;
-        }
-
         //待适配
         public string Tag = "";
     }
@@ -251,3 +224,4 @@ namespace Jyx2
         }
     }
 }
+#endif

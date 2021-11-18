@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: jynew
-  productName: jynew
+  productName: "\u91D1\u5EB8\u7FA4\u4FA0\u4F203D\u91CD\u5236\u7248"
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
@@ -137,7 +137,7 @@ PlayerSettings:
     16:10: 1
     16:9: 1
     Others: 1
-  bundleVersion: 20211106
+  bundleVersion: 20211115
   preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
@@ -157,7 +157,7 @@ PlayerSettings:
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
     Android: com.jynew.jynew
-    Standalone: com.jynew.jynew
+    Standalone: com.jynew.3D
     iPhone: com.hanjiasongshu.hjjh2
   buildNumber:
     Standalone: 0
@@ -773,9 +773,9 @@ PlayerSettings:
   webGLThreadsSupport: 0
   webGLDecompressionFallback: 0
   scriptingDefineSymbols:
-    1: UNITY_POST_PROCESSING_STACK_V2;AMPLIFY_SHADER_EDITOR;ODIN_INSPECTOR;GAIA_PRESENT;ODIN_INSPECTOR_3;GPU_INSTANCER
+    1: UNITY_POST_PROCESSING_STACK_V2;AMPLIFY_SHADER_EDITOR;ODIN_INSPECTOR;GAIA_PRESENT;ODIN_INSPECTOR_3;GPU_INSTANCER;UNITASK_ADDRESSABLE_SUPPORT
     4: UNITY_POST_PROCESSING_STACK_V2;ODIN_INSPECTOR;ODIN_INSPECTOR_3
-    7: PLIFY_SHADER_EDITORNG_STACK_V2;AMPLIFY_SHADER_EDITOR;UNITY_POST_PROCESSING_STACK_V2;SUBSTANCE_PLUGIN_ENABLED;ODIN_INSPECTOR;ODIN_INSPECTOR_3
+    7: PLIFY_SHADER_EDITORNG_STACK_V2;AMPLIFY_SHADER_EDITOR;UNITY_POST_PROCESSING_STACK_V2;SUBSTANCE_PLUGIN_ENABLED;ODIN_INSPECTOR;ODIN_INSPECTOR_3;UNITASK_ADDRESSABLE_SUPPORT;GPU_INSTANCER
     13: UNITY_POST_PROCESSING_STACK_V2
     14: UNITY_POST_PROCESSING_STACK_V2
     18: UNITY_POST_PROCESSING_STACK_V2

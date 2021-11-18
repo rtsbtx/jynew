@@ -11,8 +11,10 @@ using UnityEngine;
 using Jyx2;
 using System;
 using System.Collections;
+using Cysharp.Threading.Tasks;
 using UnityEngine.UI;
 using HSFrameWork.Common;
+using Jyx2Configs;
 
 public partial class GameMainMenu : Jyx2_UIBase {
 
@@ -37,17 +39,27 @@ public partial class GameMainMenu : Jyx2_UIBase {
     {
         //显示loading
         var c = StartCoroutine(ShowLoading());
-        
-        if (BeforeSceneLoad.loadFinishTask != null)
-        {
-            await BeforeSceneLoad.loadFinishTask;
-        }
+        await BeforeSceneLoad.loadFinishTask;
 
         StopCoroutine(c);
         LoadingText.gameObject.SetActive(false);
         homeBtnAndTxtPanel_RectTransform.gameObject.SetActive(true);
+
+        JudgeShowReleaseNotePanel();
     }
 
+    void JudgeShowReleaseNotePanel()
+    {
+        //每个更新显示一次
+        string key = "RELEASENOTE_" + Application.version;
+        if (!PlayerPrefs.HasKey(key))
+        {
+            ReleaseNote_Panel.gameObject.SetActive(true);
+            PlayerPrefs.SetInt(key, 1);
+            PlayerPrefs.Save();
+        }
+    }
+    
     IEnumerator ShowLoading()
     {
         while (true)
@@ -88,7 +100,6 @@ public partial class GameMainMenu : Jyx2_UIBase {
         base.OnShowPanel(allParams);
         AudioManager.PlayMusic(16);
         m_panelType = PanelType.Home;
-        Version_Text.text = allParams[0] as string;
         GlobalHotkeyManager.Instance.RegistHotkey(this, KeyCode.DownArrow, () =>
         {
             if(main_menu_index<QuitGameIndex) ChangeSelection(1);
@@ -195,33 +206,27 @@ public partial class GameMainMenu : Jyx2_UIBase {
         int index = 999;
         var runtime = GameRuntimeData.Create(index);
         m_panelType = PanelType.NewGamePage;
+        
         //默认创建主角
-
         var player = runtime.AllRoles[0];
         player.Key = "主角";
-        player.HeadAvata = "0";
-        
-        
-        //主角初始物品
-        foreach (var item in player.Items)
+
+        if (player.AlreadyJoinedTeam == 0)
         {
-            if(item.IsAdd != 1)
+            //主角初始物品
+            foreach (var item in player.Items)
             {
                 if (item.Count == 0) item.Count = 1;
-                runtime.AddItem(item.Id, item.Count);
-                item.IsAdd = 1;
+                runtime.AddItem(item.Item.Id, item.Count);
                 item.Count = 0;
             }
+            player.AlreadyJoinedTeam = 1;
         }
+        
 
         player.BindKey();
         runtime.Team.Add(player);
-
-        //开场地图
-        var startMap = GameMap.GetGameStartMap();
-        runtime.CurrentMap = startMap.Key + "&transport#0";
-        runtime.CurrentPos = "";
-
+        
         this.homeBtnAndTxtPanel_RectTransform.gameObject.SetActive(false);
         this.InputNamePanel_RectTransform.gameObject.SetActive(true);
 
@@ -244,12 +249,12 @@ public partial class GameMainMenu : Jyx2_UIBase {
         this.StartNewRolePanel_RectTransform.gameObject.SetActive(false);
         var loadPara = new LevelMaster.LevelLoadPara();
         loadPara.loadType = LevelMaster.LevelLoadPara.LevelLoadType.StartAtTrigger;
-        loadPara.triggerName = "Level/Triggers/0";
+        loadPara.triggerName = "0";
         GameRuntimeData.Instance.startDate = DateTime.Now;
         //加载地图
-        var startMap = GameMap.GetGameStartMap();
+        var startMap = Jyx2ConfigMap.GetGameStartMap();
         
-        LevelLoader.LoadGameMap(startMap, loadPara, "", () =>
+        LevelLoader.LoadGameMap(startMap, loadPara ,() =>
 		{
             //首次进入游戏音乐
             AudioManager.PlayMusic(GameConst.GAME_START_MUSIC_ID);

@@ -15,6 +15,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using Jyx2Configs;
 using UnityEngine;
 
 //AI计算相关
@@ -75,9 +76,7 @@ public class AIManager
             if (zhaoshi.GetStatus() != BattleZhaoshiInstance.ZhaoshiStatus.OK)
                 continue;
 
-            GetMoveAndCastPos(role, zhaoshi, range);
-
-            BattleBlockVector[] tmp = m_GetMoveAndCastPosResult;
+            BattleBlockVector[] tmp = await GetMoveAndCastPos(role, zhaoshi, range);
             if (tmp != null && tmp.Length == 2 && tmp[0] != null)
             {
                 BattleBlockVector movePos = tmp[0];
@@ -96,13 +95,15 @@ public class AIManager
                         IsRest = false
                     };
                 }
+                
+                await UniTask.WaitForEndOfFrame();
             }
         }
 
         //考虑吃药
-        if (role.Items.Count > 0 && (role.Hp < 0.2 * role.MaxHp || role.Mp < 0.2 * role.MaxMp || role.Tili < 0.2 * GameConst.MaxTili))
+        if (role.Items.Count > 0 && (role.Hp < 0.2 * role.MaxHp || role.Mp < 0.2 * role.MaxMp || role.Tili < 0.2 * GameConst.MAX_ROLE_TILI))
         {
-            List<Jyx2Item> items = GetAvailableItems(role, 3); //只使用药物
+            List<Jyx2ConfigItem> items = GetAvailableItems(role, 3); //只使用药物
             foreach(var item in items)
             {
                 double score = 0;
@@ -117,7 +118,7 @@ public class AIManager
                 }
                 if(item.AddTili > 0)
                 {
-                    score += Mathf.Min(item.AddTili, GameConst.MaxTili - role.Tili) - item.AddTili / 10;
+                    score += Mathf.Min(item.AddTili, GameConst.MAX_ROLE_TILI - role.Tili) - item.AddTili / 10;
                 }
 
                 if(score > 0)
@@ -140,7 +141,7 @@ public class AIManager
             }
         }
 
-        List<Jyx2Item> anqis = GetAvailableItems(role, 4); //获取暗器
+        List<Jyx2ConfigItem> anqis = GetAvailableItems(role, 4); //获取暗器
         //使用暗器
         if(anqis.Count > 0)
         {
@@ -151,9 +152,8 @@ public class AIManager
                 if (anqizhaoshi.GetStatus() != BattleZhaoshiInstance.ZhaoshiStatus.OK)
                     continue;
 
-                GetMoveAndCastPos(role, anqizhaoshi, range);
-
-                BattleBlockVector[] tmp = m_GetMoveAndCastPosResult;
+                BattleBlockVector[] tmp = await GetMoveAndCastPos(role, anqizhaoshi, range);
+                
                 if (tmp != null && tmp.Length == 2 && tmp[0] != null)
                 {
                     BattleBlockVector movePos = tmp[0];
@@ -267,14 +267,10 @@ public class AIManager
         return rst;
     }
 
-    private BattleBlockVector[] m_GetMoveAndCastPosResult = new BattleBlockVector[2];
-
-    public void GetMoveAndCastPos(RoleInstance role, BattleZhaoshiInstance zhaoshi, List<BattleBlockVector> moveRange)
+    public async UniTask<BattleBlockVector[]> GetMoveAndCastPos(RoleInstance role, BattleZhaoshiInstance zhaoshi, List<BattleBlockVector> moveRange)
     {
-        //clear
-        m_GetMoveAndCastPosResult[0] = null;
-        m_GetMoveAndCastPosResult[1] = null;
-
+        BattleBlockVector[] rst = new BattleBlockVector[2];
+        
         //丢给自己的，随便乱跑一个地方丢
         if (zhaoshi.GetCoverType() == SkillCoverType.POINT && zhaoshi.GetCastSize() == 0 && zhaoshi.GetCoverSize() == 0)
         {
@@ -287,17 +283,20 @@ public class AIManager
             {
                 targetBlock = GetFarestEnemyBlock(role, moveRange); //生命小于50%后退
             }
-            m_GetMoveAndCastPosResult[0] = targetBlock;
-            m_GetMoveAndCastPosResult[1] = targetBlock;
+            
+            
+            rst[0] = targetBlock;
+            rst[1] = targetBlock;
+            return rst;
         }
 
         bool isAttack = zhaoshi.IsCastToEnemy();
         double maxScore = 0;
 
+        Dictionary<int,float > cachedScore = new Dictionary<int, float>();
         //带攻击范围的，找最多人丢
         foreach (var moveBlock in moveRange)
         {
-            int castSize = zhaoshi.GetCastSize();
             var coverType = zhaoshi.GetCoverType();
             var sx = moveBlock.X;
             var sy = moveBlock.Y;
@@ -306,55 +305,65 @@ public class AIManager
             int splitFrame = 0;//分帧
             foreach (var castBlock in castBlocks)
             {
-                double score = 0;
-                var coverSize = zhaoshi.GetCoverSize();
-                var tx = castBlock.X;
-                var ty = castBlock.Y;
-                var coverBlocks = rangeLogic.GetSkillCoverBlocks(coverType, tx, ty, sx, sy, coverSize);
-
-                foreach (var coverBlock in coverBlocks)
+                float score = 0;
+                if (cachedScore.ContainsKey(castBlock.ToInt()))
                 {
-                    var targetSprite = BattleModel.GetAliveRole(coverBlock);
-                    //位置没人
-                    if (targetSprite == null) continue;
+                    score = cachedScore[castBlock.ToInt()];
+                }
+                else
+                {
+                    var coverSize = zhaoshi.GetCoverSize();
+                    var tx = castBlock.X;
+                    var ty = castBlock.Y;
+                    var coverBlocks = rangeLogic.GetSkillCoverBlocks(coverType, tx, ty, sx, sy, coverSize);
 
-                    //如果判断是施展给原来的自己，但自己已经不在原位置了,相当于没打中
-                    if (targetSprite == role && !(targetSprite.Pos.X == moveBlock.X && targetSprite.Pos.Y == moveBlock.Y)) continue;
-                    //如果是自己的新位置，则相当于施展给自己
-                    if (targetSprite.Pos.X == moveBlock.X && targetSprite.Pos.Y == moveBlock.Y)
+                    foreach (var coverBlock in coverBlocks)
                     {
-                        continue;
-                        //targetSprite = sprite;
+                        var targetSprite = BattleModel.GetAliveRole(coverBlock);
+                        //位置没人
+                        if (targetSprite == null) continue;
+
+                        //如果判断是施展给原来的自己，但自己已经不在原位置了,相当于没打中
+                        if (targetSprite == role && !(targetSprite.Pos.X == moveBlock.X && targetSprite.Pos.Y == moveBlock.Y)) continue;
+                        //如果是自己的新位置，则相当于施展给自己
+                        if (targetSprite.Pos.X == moveBlock.X && targetSprite.Pos.Y == moveBlock.Y)
+                        {
+                            continue;
+                            //targetSprite = sprite;
+                        }
+                        else if (targetSprite.team != role.team && targetSprite.Hp > 0)
+                        {
+                            score += 0.1f;
+                        }
                     }
-                    else if (targetSprite.team != role.team && targetSprite.Hp > 0)
-                    {
-                        score += 0.1;
-                    }
+
+                    cachedScore[castBlock.ToInt()] = score;
                 }
 
                 if (score > maxScore)
                 {
                     maxScore = score;
 
-                    m_GetMoveAndCastPosResult[0] = new BattleBlockVector(moveBlock.X, moveBlock.Y);
-                    m_GetMoveAndCastPosResult[1] = new BattleBlockVector(castBlock.X, castBlock.Y);
+                    rst[0] = new BattleBlockVector(moveBlock.X, moveBlock.Y);
+                    rst[1] = new BattleBlockVector(castBlock.X, castBlock.Y);
                 }
             }
-            if (splitFrame++ > 5)//分帧
+
+            splitFrame++;
+            if (splitFrame > 5)//分帧
             {
-                // yield return 0;
                 splitFrame = 0;
+                await UniTask.WaitForEndOfFrame();
             }
         }
-        if (maxScore > 0)
+        
+        if (maxScore == 0)
         {
+            rst[0] = null;
+            rst[1] = null;
+        }
 
-        }
-        else
-        {
-            m_GetMoveAndCastPosResult[0] = null;
-            m_GetMoveAndCastPosResult[1] = null;
-        }
+        return rst;
     }
 
     public RoleInstance GetNearestEnemy(RoleInstance role)
@@ -431,10 +440,27 @@ public class AIManager
         }
         return rst;
     }
-    
 
+
+    
+    /// <summary>
+    /// 战斗计算公式可以参考：https://tiexuedanxin.net/thread-365140-1-1.html
+    ///
+    /// 
+    /// </summary>
+    /// <param name="r1"></param>
+    /// <param name="r2"></param>
+    /// <param name="skill"></param>
+    /// <param name="blockVector"></param>
+    /// <returns></returns>
     public SkillCastResult GetSkillResult(RoleInstance r1, RoleInstance r2, BattleZhaoshiInstance skill, BattleBlockVector blockVector)
     {
+        //队伍1武学常识
+        int totalWuxue = BattleModel.GetTotalWuXueChangShi(r1.team);
+        
+        //队伍2武学常识
+        int totalWuxue2 = BattleModel.GetTotalWuXueChangShi(r2.team);
+        
         SkillCastResult rst = new SkillCastResult(r1, r2, skill, blockVector.X, blockVector.Y);
         var magic = skill.Data.GetSkill();
         int level_index = skill.Data.GetLevel()-1;//此方法返回的是显示的武功等级，1-10。用于calMaxLevelIndexByMP时需要先-1变为数组index再使用
@@ -447,41 +473,83 @@ public class AIManager
                 rst.damage = 1 + UnityEngine.Random.Range(0, 10);
                 return rst;
             }
-            int attack = r1.Attack + skill.Data.GetSkillLevelInfo(level_index).Attack / 3;
-            int defence = r2.Defence;
+            //总攻击力＝(人物攻击力×3 ＋ 武功当前等级攻击力)/2 ＋武器加攻击力 ＋ 防具加攻击力 ＋ 武器武功配合加攻击力 ＋我方武学常识之和
+            int attack = (r1.Attack * 3 + skill.Data.GetSkillLevelInfo(level_index).Attack) / 2 + totalWuxue;
+            
+            //总防御力 ＝ 人物防御力 ＋武器加防御力 ＋ 防具加防御力 ＋ 敌方武学常识之和
+            int defence = r2.Defence + totalWuxue2;
             if (r1.Weapon >= 0)
             {
-                var i = ConfigTable.Get<Jyx2Item>(r1.Weapon);
+                var i = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(r1.Weapon);
                 attack += i.Attack;
             }
             if (r1.Armor >= 0)
             {
-                var i = ConfigTable.Get<Jyx2Item>(r1.Armor);
+                var i = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(r1.Armor);
                 attack += i.Attack;
             }
             if (r2.Weapon >= 0)
             {
-                var i = ConfigTable.Get<Jyx2Item>(r2.Weapon);
+                var i = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(r2.Weapon);
                 defence += i.Defence;
             }
             if (r2.Armor >= 0)
             {
-                var i = ConfigTable.Get<Jyx2Item>(r2.Armor);
+                var i = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(r2.Armor);
                 defence += i.Defence;
             }
 
-            int v = attack - defence;
-            int dis = r1.Pos.GetDistance(r2.Pos);
-            v = (int)(v / Math.Exp((dis - 1) / 10));
-            v += UnityEngine.Random.Range(0, 10) - UnityEngine.Random.Range(0, 10);
-            if (v < 10)
+            //伤害 ＝ （总攻击力－总防御×3）×2 / 3 + RND(20) – RND(20)                  （公式1）
+            int v = (attack - defence * 3) * 2 / 3 + UnityEngine.Random.Range(0, 20) - UnityEngine.Random.Range(0, 20);
+            
+            //如果上面的伤害 < 0 则
+            //伤害 ＝  总攻击力 / 10 + RND(4) – RND(4)                                            （公式2）
+            if (v <= 0)
             {
-                v = 1 + UnityEngine.Random.Range(0, 10);
+                v = attack / 10 + UnityEngine.Random.Range(0, 4) - UnityEngine.Random.Range(0, 4);
             }
+
+            //7、如果伤害仍然 < 0 则    伤害 ＝ 0
+            if (v <= 0)
+            {
+                v = 0;
+            }
+            else
+            {
+                //8、if  伤害 > 0 then
+                //    伤害＝ 伤害 ＋ 我方体力/15  ＋ 敌人受伤点数/ 20
+                v = v + r1.Tili / 15 + r2.Hurt / 20;
+            }
+            
+            //点、线、十字的伤害，距离就是两人相差的格子数，最小为1。
+            //面攻击时，距离是两人相差的格子数＋敌人到攻击点的距离。
+            int dist = r1.Pos.GetDistance(r2.Pos);
+            if (skill.GetCoverType() == SkillCoverType.FACE)
+            {
+                dist += blockVector.GetDistance(r2.Pos);
+            }
+
+            //9、if 双方距离 <= 10 then
+            //    伤害 ＝ 伤害×（100 -  ( 距离–1 ) * 3 ）/ 100
+            //else
+            //    伤害 ＝ 伤害*2 /3
+            if (dist <= 10)
+            {
+                v = v * (100 - (dist - 1) * 3) / 100;
+            }
+            else
+            {
+                v = v * 2 / 3;
+            }
+
+            //10、if 伤害 < 1  伤害 ＝ 1
+            if (v < 1)
+                v = 1;
+            
             rst.damage = v;
             return rst;
         }
-        else if (magic.DamageType == 1) //吸内
+        else if ((int)magic.DamageType == 1) //吸内
         {
             var levelInfo = skill.Data.GetSkillLevelInfo();
             
@@ -508,22 +576,22 @@ public class AIManager
             
             return rst;
         }
-        else if (magic.DamageType == 2) //用毒 -GameUtil::usePoison
+        else if ((int)magic.DamageType == 2) //用毒 -GameUtil::usePoison
         {
             rst.poison = usePoison(r1, r2);
             return rst;
         }
-        else if (magic.DamageType == 3) //解毒
+        else if ((int)magic.DamageType == 3) //解毒
         {
             rst.depoison = detoxification(r1, r2);
             return rst;
         }
-        else if (magic.DamageType == 4) //治疗
+        else if ((int)magic.DamageType == 4) //治疗
         {
             rst.heal = medicine(r1, r2);
             return rst;
         }
-        else if (magic.DamageType == 5) //暗器
+        else if ((int)magic.DamageType == 5) //暗器
         {
             var anqi = skill.Anqi;
             rst.damage = hiddenWeapon(r1, r2, anqi);
@@ -537,13 +605,13 @@ public class AIManager
         return null;
     }
 
-    List<Jyx2Item> GetAvailableItems(RoleInstance role, int itemType)
+    List<Jyx2ConfigItem> GetAvailableItems(RoleInstance role, int itemType)
     {
-        List<Jyx2Item> items = new List<Jyx2Item>();
+        List<Jyx2ConfigItem> items = new List<Jyx2ConfigItem>();
         foreach (var item in role.Items)
         {
-            var tmp = ConfigTable.Get<Jyx2Item>(item.Id);
-            if (tmp.ItemType == itemType)
+            var tmp = item.Item;
+            if ((int)tmp.ItemType == itemType)
                 items.Add(tmp);
         }
         return items;
@@ -578,7 +646,7 @@ public class AIManager
 
     //暗器
     //返回值为一正数
-    int hiddenWeapon(RoleInstance r1, RoleInstance r2, Jyx2Item anqi)
+    int hiddenWeapon(RoleInstance r1, RoleInstance r2, Jyx2ConfigItem anqi)
     {
         int v = r1.Anqi - anqi.AddHp;
         int dis = r1.Pos.GetDistance(r2.Pos);
