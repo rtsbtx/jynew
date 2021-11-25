@@ -8,13 +8,9 @@
  * 金庸老先生千古！
  */
 using Jyx2;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using DG.Tweening;
-using HSFrameWork.ConfigTable;
 using System;
+using System.Linq;
 using Jyx2Configs;
 
 public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
@@ -88,7 +84,7 @@ public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
 
     void OnXiakeBtnClick() 
     {
-        Jyx2_UIManager.Instance.ShowUI(nameof(XiakeUIPanel), GameRuntimeData.Instance.Player, GameRuntimeData.Instance.Team);
+        Jyx2_UIManager.Instance.ShowUI(nameof(XiakeUIPanel), GameRuntimeData.Instance.Player, GameRuntimeData.Instance.GetTeam().ToList());
     }
 
     void OnBagBtnClick() 
@@ -115,7 +111,7 @@ public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
         }
 
         var runtime = GameRuntimeData.Instance;
-        GameUtil.SelectRole(runtime.Team, (selectRole) => {
+        GameUtil.SelectRole(runtime.GetTeam(), (selectRole) => {
             if (selectRole == null) return;
 
             if (selectRole.GetJyx2RoleId() == item.User) return;
@@ -199,9 +195,9 @@ public partial class MainUIPanel : Jyx2_UIBase,IUIAnimator
             return;
         
         //执行离开事件
-        foreach (var zone in FindObjectsOfType<BigMapZone>())
+        foreach (var zone in FindObjectsOfType<MapTeleportor>())
         {
-            if (zone.TransportMapId == GameConst.WORLD_MAP_ID)
+            if (zone.m_GameMap.Id == GameConst.WORLD_MAP_ID)
             {
                 zone.DoTransport();
                 break;

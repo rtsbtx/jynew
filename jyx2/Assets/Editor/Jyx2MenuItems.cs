@@ -4,11 +4,14 @@ using System.Net;
 using System.Threading;
 using CSObjectWrapEditor;
 using DG.DemiLib;
-using Jyx2.Editor;
+
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
+#if UNITY_STANDALONE_OSX
+using UnityEditor.OSXStandalone;
+#endif
 using UnityToolbarExtender.Examples;
 
 namespace Jyx2Editor
@@ -109,12 +112,6 @@ namespace Jyx2Editor
             //重新生成Addressable相关文件
             AddressableAssetSettings.BuildPlayerContent();
 
-            //强制GENDATA
-            //GenDataMenuCmd.GenerateDataForce();
-
-            // 处理场景文件
-            //AddScenesToBuildTool.AddScenesToBuild();
-
             string currentDate = DateTime.Now.ToString("yyyyMMdd");
 
             //设置版本号
@@ -126,22 +123,13 @@ namespace Jyx2Editor
             //打包
             BuildPipeline.BuildPlayer(GetScenePaths(), exePath, BuildTarget.StandaloneWindows64, BuildOptions.None);
 
-            //强制移动目录
-            //System.IO.Directory.Move("StandaloneWindows64", path + "/StandaloneWindows64");
-
             EditorUtility.DisplayDialog("打包完成", "输出目录:" + path, "确定");
         }
 
 
         static string[] GetScenePaths()
         {
-            /*string[] scenes = new string[EditorBuildSettings.scenes.Length];
-            for(int i = 0; i < scenes.Length; i++) {
-                scenes[i] = EditorBuildSettings.scenes[i].path;
-            }
-            return scenes;*/
-
-            return new string[] {"Assets/Jyx2Scenes/0_GameStart.unity"};
+            return new string[] {"Assets/0_GameStart.unity", "Assets/0_MainMenu.unity"};
         }
 
         [MenuItem("一键打包/Android")]
@@ -160,19 +148,9 @@ namespace Jyx2Editor
 
                 if (string.IsNullOrEmpty(path))
                     return;
-
-                //生成luaWrap
-                //Generator.ClearAll();
-                //Generator.GenAll();
-
+                
                 //重新生成Addressable相关文件
                 AddressableAssetSettings.BuildPlayerContent();
-
-                //强制GENDATA
-                //GenDataMenuCmd.GenerateDataForce();
-
-                // 处理场景文件
-                //AddScenesToBuildTool.AddScenesToBuild();
 
                 string currentDate = DateTime.Now.ToString("yyyyMMdd");
                 string apkPath = path + $"/jyx2AndroidBuild-{currentDate}.apk";
@@ -187,13 +165,8 @@ namespace Jyx2Editor
                 //打包
                 BuildPipeline.BuildPlayer(GetScenePaths(), apkPath, BuildTarget.Android, BuildOptions.None);
 
-                //强制移动目录
-                //System.IO.Directory.Move("StandaloneWindows64", path + "/StandaloneWindows64");
-
                 EditorUtility.DisplayDialog("打包完成", "输出文件:" + apkPath, "确定");
-
-                //清理luaWrap
-                //Generator.ClearAll();
+                
                 AssetDatabase.Refresh();
             }
             catch (Exception e)
@@ -217,21 +190,16 @@ namespace Jyx2Editor
             {
                 EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.StandaloneOSX);
 
+#if UNITY_STANDALONE_OSX
+                //支持m1芯片
+                UnityEditor.OSXStandalone.UserBuildSettings.architecture = MacOSArchitecture.x64ARM64;
+#endif
+
                 if (string.IsNullOrEmpty(path))
                     return;
 
-                //生成luaWrap
-                //Generator.ClearAll();
-                //Generator.GenAll();
-
                 //重新生成Addressable相关文件
                 AddressableAssetSettings.BuildPlayerContent();
-
-                //强制GENDATA
-                //GenDataMenuCmd.GenerateDataForce();
-
-                // 处理场景文件
-                //AddScenesToBuildTool.AddScenesToBuild();
 
                 string currentDate = DateTime.Now.ToString("yyyyMMdd");
                 string outputPath = path + $"/jyxOSXBuild-{currentDate}.app";
@@ -240,12 +208,10 @@ namespace Jyx2Editor
                 PlayerSettings.bundleVersion = currentDate;
 
                 //打包
-                BuildPipeline.BuildPlayer(GetScenePaths(), outputPath, BuildTarget.StandaloneOSX, BuildOptions.None);
+                BuildPipeline.BuildPlayer(GetScenePaths(), outputPath, BuildTarget.StandaloneOSX,BuildOptions.None);
 
                 EditorUtility.DisplayDialog("打包完成", "输出文件:" + outputPath, "确定");
 
-                //清理luaWrap
-                //Generator.ClearAll();
                 AssetDatabase.Refresh();
             }
             catch (Exception e)
@@ -254,6 +220,5 @@ namespace Jyx2Editor
                 Debug.LogError(e.StackTrace);
             }
         }
-        
     }
 }

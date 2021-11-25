@@ -7,9 +7,10 @@
  *
  * 金庸老先生千古！
  */
-using HSFrameWork.Common;
+
 using ProtoBuf;
 using System.Xml.Serialization;
+using Jyx2.Middleware;
 using Jyx2Configs;
 
 namespace Jyx2
@@ -35,7 +36,7 @@ namespace Jyx2
             get
             {
                 if (Zhaoshi == null) return string.Empty;
-                return Zhaoshi.Data.PK;
+                return Zhaoshi.Data.Key.ToString();
             }
             set { }
         }
@@ -120,7 +121,11 @@ namespace Jyx2
 
         /// <summary>
         /// 具体执行改逻辑
+        /// 战斗经验计算公式可以参考：https://github.com/ZhanruiLiang/jinyong-legend
+        ///
+        /// 
         /// </summary>
+        /// <returns></returns>
         public void Run()
         {
             var rst = this;
@@ -134,9 +139,10 @@ namespace Jyx2
                     r2.View.SetDamage(rst.damage, r2.Hp);
                 }
 
-                r1.ExpGot += rst.damage;
+                r1.ExpGot += 2 + rst.damage / 5;
+                //打死敌人获得额外经验
                 if (r2.Hp <= 0)
-                    r1.ExpGot += rst.damage / 2;
+                    r1.ExpGot += r2.Level * 10;
 
                 //无敌
                 if(BattleManager.Whosyourdad && r2.team == 0)
@@ -167,7 +173,7 @@ namespace Jyx2
                     }
                 }
 
-                r1.ExpGot += damageMp / 2;
+                r1.ExpGot += 2;
             }
 
             if (rst.poison > 0)
@@ -178,7 +184,7 @@ namespace Jyx2
                     r2.View.ShowAttackInfo($"<color=green>中毒+{rst.poison}</color>");
                 }
 
-                r1.ExpGot += rst.poison;
+                r1.ExpGot += 1;
             }
 
             if (rst.depoison > 0)
@@ -189,7 +195,7 @@ namespace Jyx2
                     r2.View.ShowAttackInfo($"<color=green>中毒-{rst.depoison}</color>");
                 }
 
-                r1.ExpGot += rst.depoison;
+                r1.ExpGot += 1;
             }
 
             if (rst.heal > 0)
@@ -203,7 +209,7 @@ namespace Jyx2
                     r2.View.ShowAttackInfo($"<color=white>医疗+{addHp}</color>");
                 }
 
-                r1.ExpGot += rst.heal;
+                r1.ExpGot += 1;
             }
 
             r2.Hurt += rst.hurt;

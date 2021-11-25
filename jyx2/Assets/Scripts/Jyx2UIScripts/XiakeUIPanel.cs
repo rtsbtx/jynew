@@ -17,7 +17,7 @@ using System.Text;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
-using HSFrameWork.ConfigTable;
+
 using Jyx2Configs;
 
 public partial class XiakeUIPanel : Jyx2_UIBase
@@ -34,7 +34,7 @@ public partial class XiakeUIPanel : Jyx2_UIBase
         IsBlockControl = true;
         BindListener(BackButton_Button, OnBackClick);
         BindListener(ButtonSelectWeapon_Button, OnWeaponClick);
-		BindListener(LeaveButton_Button, OnLeaveClick);
+        BindListener(LeaveButton_Button, OnLeaveClick);
         BindListener(ButtonSelectArmor_Button, OnArmorClick);
         BindListener(ButtonSelectBook_Button, OnXiulianClick);
         BindListener(ButtonHeal_Button, OnHealClick);
@@ -49,7 +49,7 @@ public partial class XiakeUIPanel : Jyx2_UIBase
             m_roleList = allParams[1] as List<RoleInstance>;
 
         /*var curMap=GameRuntimeData.Instance.CurrentMap;
-		(LeaveButton_Button.gameObject).SetActive("0_BigMap"==curMap);*/
+        (LeaveButton_Button.gameObject).SetActive("0_BigMap"==curMap);*/
         DoRefresh();
     }
 
@@ -89,10 +89,10 @@ public partial class XiakeUIPanel : Jyx2_UIBase
         SkillText_Text.text = GetSkillText(m_currentRole);
         ItemsText_Text.text = GetItemsText(m_currentRole);
 
-        bool canDepoison = m_currentRole.DePoison > 0 && m_currentRole.Tili >= 30;
-        ButtonHeal_Button.gameObject.SetActive(canDepoison);
-        bool canHeal = m_currentRole.Heal > 0 && m_currentRole.Tili >= 10;
-        ButtonDetoxicate_Button.gameObject.SetActive(canHeal);
+        bool canDepoison = m_currentRole.DePoison > 20 && m_currentRole.Tili >= 10;
+        ButtonDetoxicate_Button.gameObject.SetActive(canDepoison);
+        bool canHeal = m_currentRole.Heal > 20 && m_currentRole.Tili >= 50;
+        ButtonHeal_Button.gameObject.SetActive(canHeal);
         
         PreImage_Image.LoadAsyncForget(m_currentRole.Data.GetPic());
     }
@@ -217,9 +217,9 @@ public partial class XiakeUIPanel : Jyx2_UIBase
         }
 
         var eventLuaPath = GameConfigDatabase.Instance.Get<Jyx2ConfigCharacter>(m_currentRole.GetJyx2RoleId()).LeaveStoryId;
-        if (eventLuaPath != null && eventLuaPath != "")
+        if (!string.IsNullOrEmpty(eventLuaPath))
         {
-            Jyx2.LuaExecutor.Execute("jygame/ka" + eventLuaPath, new Action(() => { RefreshView(); }));
+            Jyx2.LuaExecutor.Execute("jygame/ka" + eventLuaPath, RefreshView);
         }
         else
         {

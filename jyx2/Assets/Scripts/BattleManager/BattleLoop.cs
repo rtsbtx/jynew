@@ -11,7 +11,7 @@ using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
-using HSFrameWork.Common;
+using Jyx2.Middleware;
 using Jyx2Configs;
 using UnityEngine;
 
@@ -64,8 +64,8 @@ namespace Jyx2.Battle
                 //当前行动角色 UI相关展示
                 await SetCurrentRole(role);
 
-                //中毒生效
-                await RunPosionLogic(role);
+                //中毒受伤生效
+                await RunPosionHurtLogic(role);
 
                 //判断是AI还是人工
                 if (role.isAI)
@@ -101,20 +101,40 @@ namespace Jyx2.Battle
             m_roleFocusRing.transform.localPosition = new Vector3(0, 0.15f, 0);
         }
 
-        //中毒
-        async UniTask RunPosionLogic(RoleInstance role)
+        //中毒受伤
+        /// </summary>
+        /// 中毒掉血计算公式可以参考：https://github.com/ZhanruiLiang/jinyong-legend
+        ///
+        /// 
+        /// </summary>
+        /// <param name="role"></param>
+        /// <returns></returns>
+        async UniTask RunPosionHurtLogic(RoleInstance role)
         {
-            if (role.Poison <= 0) return;
-            int tmp = role.Hp;
-            role.Poison -= role.AntiPoison;
-            role.Poison = Tools.Limit(role.Poison, 0, 100);
-            role.Hp -= role.Poison / 3;
+            int hurtEffect = role.Hurt / 20;
+            int poisonEffect = role.Poison / 10;
+
+            int hurtEffectRst = Tools.Limit(hurtEffect, 0, role.Hp);
+            int poisonEffectRst = Tools.Limit(poisonEffect, 0, role.Hp);
+            
+            if (hurtEffect == 0 && poisonEffect == 0) return;
+
+            if (hurtEffectRst > 0)
+            {
+                role.View?.ShowAttackInfo($"<color=white>-{hurtEffectRst}</color>");
+                role.Hp -= hurtEffectRst;
+            }
+            
+            if (poisonEffectRst > 0)
+            {
+                role.View?.ShowAttackInfo($"<color=green>-{poisonEffectRst}</color>");
+                role.Hp -= poisonEffectRst;
+            }
             if (role.Hp < 1)
                 role.Hp = 1;
 
+            //只有实际中毒和受伤才等待
             role.View?.MarkHpBarIsDirty();
-            int effectRst = tmp - role.Hp;
-            role.View.ShowAttackInfo($"<color=green>毒发-{effectRst}</color>");
             await UniTask.Delay(TimeSpan.FromSeconds(0.8));
         }
 
@@ -251,7 +271,7 @@ namespace Jyx2.Battle
         //判断是否可以左右互搏
         bool Zuoyouhubo(RoleInstance role, BattleZhaoshiInstance skill)
         {
-            return (role.Zuoyouhubo > 0 && skill.Data.GetSkill().DamageType == 0);
+            return (role.Zuoyouhubo > 0 && (skill.Data.GetSkill().DamageType == 0 || (int)skill.Data.GetSkill().DamageType == 1));
         }
 
         //使用道具
@@ -297,9 +317,14 @@ namespace Jyx2.Battle
                 {
                     role.View.ShowBattleText($"{pro.Name}+{effect.Value}", Color.blue);
                 }
-                else if (effect.Key == 6 || effect.Key == 8 || effect.Key == 13 || effect.Key == 16 || effect.Key == 26)
+                else if (effect.Key == 6 || effect.Key == 8 || effect.Key == 26)
                 {
-                    role.View.ShowBattleText($"{pro.Name}+{effect.Value}", Color.green);
+                    string valueText = effect.Value > 0 ? $"+{effect.Value}" : effect.Value.ToString();
+                    role.View.ShowBattleText($"{pro.Name}{valueText}", Color.green);
+                }
+                else if (effect.Key == 13 || effect.Key == 16)
+                {
+                    role.View.ShowBattleText($"{pro.Name}+{effect.Value}", Color.white);
                 }
             }
 
