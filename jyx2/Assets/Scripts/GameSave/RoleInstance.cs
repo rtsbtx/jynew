@@ -235,14 +235,14 @@ namespace Jyx2
             Qinggong += a;
             Defence += a;
 
-            Heal = checkUp(Heal, 0, 3);
-            DePoison = checkUp(DePoison, 0, 3);
-            UsePoison = checkUp(UsePoison, 0, 3);
+            Heal = checkUp(Heal, 20, 3);
+            DePoison = checkUp(DePoison, 20, 3);
+            UsePoison = checkUp(UsePoison, 20, 3);
 
-            Quanzhang = checkUp(Quanzhang, 0, 3);
-            Yujian = checkUp(Yujian, 0, 3);
-            Shuadao = checkUp(Shuadao, 0, 3);
-            Qimen = checkUp(Qimen, 0, 3);
+            Quanzhang = checkUp(Quanzhang, 20, 3);
+            Yujian = checkUp(Yujian, 20, 3);
+            Shuadao = checkUp(Shuadao, 20, 3);
+            Qimen = checkUp(Qimen, 20, 3);
 
             this.Limit(1, 1, 1);
 
@@ -298,9 +298,9 @@ namespace Jyx2
 
         int checkUp(int value, int limit, int max_inc)
         {
-            if (value > limit)
+            if (value >= limit)
             {
-                value += 1 + Tools.GetRandomInt(0, max_inc);
+                value += Tools.GetRandomInt(0, max_inc);
             }
 
             return value;
@@ -468,7 +468,7 @@ namespace Jyx2
                 }
 
                 //若有相关武学，满级则为假，未满级为真
-                //若已经学满武学，则为假
+                //若已经学满武学，则为真
                 //此处注意，如果有可制成物品的秘籍，则武学满级之后不会再制药了，请尽量避免这样的设置
                 if (item.Skill != null)
                 {
@@ -484,7 +484,7 @@ namespace Jyx2
 
                     if (level == GameConst.MAX_WUGONG_LEVEL)
                     {
-                        return false;
+                        return true;
                     }
                 }
 
@@ -951,9 +951,16 @@ namespace Jyx2
                 Hp = Tools.Limit(Hp + addHpMp, 0, MaxHp);
                 Mp = Tools.Limit(Mp + addHpMp, 0, MaxMp);
                 if (addHpMp > 0)
+                {
                     this.View?.ShowAttackInfo($"<color=white>+{addHpMp}</color>");
+                    this.View.MarkHpBarIsDirty();
+                }
+
                 if (addHpMp > 0)
+                {
                     this.View?.ShowAttackInfo($"<color=blue>+{addHpMp}</color>");
+                    this.View.MarkHpBarIsDirty();
+                }
             }
         }
 
