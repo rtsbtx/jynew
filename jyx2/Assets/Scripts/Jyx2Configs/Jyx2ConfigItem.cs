@@ -222,6 +222,9 @@ namespace Jyx2Configs
         [BoxGroup(CONDITION_GROUP)][LabelText("需经验")]
         public int NeedExp;
 
+        [BoxGroup(CONDITION_GROUP)][LabelText("需自宫")]
+        public bool NeedCastration;
+
         [ShowIf(nameof(IsItemBook))]
         [BoxGroup(EFFECT_GROUP)][LabelText("练出物品需经验")]
         public int GenerateItemNeedExp;
@@ -238,23 +241,6 @@ namespace Jyx2Configs
         public override async UniTask WarmUp()
         {
             //GetPic().Forget();
-        }
-        
-        /// <summary>
-        /// 这个代码实现太丑陋，需要重构
-        /// </summary>
-        public int User
-        {
-            get
-            {
-                if (!GameRuntimeData.Instance.ItemUser.ContainsKey(Id.ToString()))
-                    return -1;
-                return GameRuntimeData.Instance.ItemUser[Id.ToString()];
-            }
-            set
-            {
-                GameRuntimeData.Instance.ItemUser[Id.ToString()] = value;
-            }
         }
     }
 }

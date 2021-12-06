@@ -574,12 +574,13 @@ namespace Jyx2
                     }
                     break;
                 }
-                case SkillCoverType.FACE:
+                case SkillCoverType.RECT:
                     rst.Add(new BattleBlockVector() { X = tx, Y = ty });
 
                     if (coversize > 0)
                     {
-                        rst.AddRange(GetNearBlocks(tx, ty, coversize));
+                        int actualSize = (int)Math.Ceiling(coversize / Math.Sqrt(2)); //尝试修复距离不对？
+                        rst.AddRange(GetNearBlocks(tx, ty, actualSize));
                     }
                     break;
 

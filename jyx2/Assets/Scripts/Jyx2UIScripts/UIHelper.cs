@@ -106,6 +106,20 @@ public class UIHelper
 
     }
 
+    //使用人
+    static string GetItemUser(Jyx2ConfigItem item)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        RoleInstance user = GameRuntimeData.Instance.GetRoleInTeam(GameRuntimeData.Instance.GetItemUser(item.Id));
+        if (user != null)
+        {
+            sb.Append($"{user.Name}\n");
+        }
+
+        return sb.ToString();
+    }
+
     //效果
     static string GetEffectText(Jyx2ConfigItem item)
     {
@@ -136,7 +150,7 @@ public class UIHelper
             if (!GameConst.ProItemDic.ContainsKey(effect.Key.ToString()))
                 continue;
             PropertyItem pro = GameConst.ProItemDic[effect.Key.ToString()];
-			sb.Append($"{pro.Name}:  {effect.Value.ToString()}\n");
+            sb.Append($"{pro.Name}:  {effect.Value.ToString()}\n");
         }
         return sb.ToString();
     }
@@ -165,7 +179,7 @@ public class UIHelper
         StringBuilder sb = new StringBuilder();
         if (item.GenerateItemNeedExp > 0)
         {
-            sb.Append($"练出物品需经验:  {item.GenerateItemNeedExp}\n");
+           /* sb.Append($"练出物品需经验:  {item.GenerateItemNeedExp}\n");*/
         }
         
         if (item.GenerateItemNeedCost != null)
@@ -180,8 +194,15 @@ public class UIHelper
     {
         StringBuilder strBuilder = new StringBuilder();
         strBuilder.Append($"<size=35><color=#FFDB00>{item.Name}</color></size>\n");
-		strBuilder.Append($"{item.Desc}");
+        strBuilder.Append($"{item.Desc}");
 
+        string user = GetItemUser(item);
+        if (!string.IsNullOrEmpty(user))
+        {
+            strBuilder.Append($"\n\n");
+            strBuilder.Append("<size=28><color=#FFDB00>使用人</color></size>\n");
+            strBuilder.Append(user);
+        }
         string effect = GetEffectText(item);
         if (!string.IsNullOrEmpty(effect))
         {

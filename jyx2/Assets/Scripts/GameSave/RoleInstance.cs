@@ -115,6 +115,7 @@ namespace Jyx2
             Name = Data.Name;
             Sex = (int)Data.Sexual;
             Level = Data.Level;
+            Exp = Data.Exp;
             Hp = Data.MaxHp;
             MaxHp = Data.MaxHp;
             Mp = Data.MaxMp;
@@ -214,17 +215,17 @@ namespace Jyx2
         /// <returns></returns>
         public void LevelUp()
         {
-            Exp -= GameConst._levelUpExpList[this.Level - 1];
             Level++;
             Tili = GameConst.MAX_ROLE_TILI;
-            MaxHp += (Data.HpInc + Tools.GetRandomInt(0, 3)) * 3;
+            MaxHp += (Data.HpInc + Random.Range(0, 3)) * 3;
             SetHPAndRefreshHudBar(this.MaxHp);
             //当0 <= 资质 < 30, a = 2;
             //当30 <= 资质 < 50, a = 3;
             //当50 <= 资质 < 70, a = 4;
             //当70 <= 资质 < 90, a = 5;
             //当90 <= 资质 < 100, a = 6;
-            int a = (int)Math.Ceiling((double)(IQ - 10) / 20) + 1;
+            //a = random(a) + 1;
+            int a = Random.Range(0, (int)Math.Ceiling((double)(IQ - 10) / 20)) + 1;
             MaxMp += (9 - a) * 4;
             Mp = MaxMp;
 
@@ -242,7 +243,7 @@ namespace Jyx2
             Quanzhang = checkUp(Quanzhang, 20, 3);
             Yujian = checkUp(Yujian, 20, 3);
             Shuadao = checkUp(Shuadao, 20, 3);
-            Qimen = checkUp(Qimen, 20, 3);
+            Anqi = checkUp(Anqi, 20, 3);
 
             this.Limit(1, 1, 1);
 
@@ -289,6 +290,7 @@ namespace Jyx2
             Pinde = Tools.Limit(Pinde, 0, GameConst.MAX_ROLE_PINDE);
             Shengwang = Tools.Limit(Shengwang, 0, GameConst.MAX_ROLE_SHENGWANG);
             AttackPoison = Tools.Limit(AttackPoison, 0, GameConst.MAX_ROLE_ATK_POISON);
+            Hurt = Tools.Limit(Hurt, 0, GameConst.MAX_HURT);
 
             foreach (var wugong in Wugongs)
             {
@@ -300,7 +302,7 @@ namespace Jyx2
         {
             if (value >= limit)
             {
-                value += Tools.GetRandomInt(0, max_inc);
+                value += Random.Range(0, max_inc);
             }
 
             return value;
@@ -499,7 +501,7 @@ namespace Jyx2
                        && testAttr(this.Shuadao, item.ConditionShuadao)
                        && testAttr(this.Qimen, item.ConditionQimen)
                        && testAttr(this.Anqi, item.ConditionAnqi)
-                       && testAttr(this.Mp, item.ConditionMp)
+                       && testAttr(this.MaxMp, item.ConditionMp)
                        && testAttr(this.IQ, item.ConditionIQ);
             }
             else if ((int)item.ItemType == 3)
@@ -622,7 +624,7 @@ namespace Jyx2
                     this.LearnMagic(item.Skill.Id);
                 }
 
-                this.ExpForItem -= need_item_exp;
+                this.ExpForItem = 0;
             }
 
             this.Limit(1, 1, 1);
@@ -637,7 +639,7 @@ namespace Jyx2
             if (item == null)
                 return;
 
-            item.User = -1;
+            runtime.SetItemUser(item.Id, -1);
             this.Tili -= item.AddTili;
             this.SetHPAndRefreshHudBar(this.Hp - item.AddHp);
             this.MaxHp -= item.AddMaxHp;
@@ -864,7 +866,7 @@ namespace Jyx2
             {
                 speed += this.GetArmor().Qinggong;
             }
-
+            
             speed = speed / 15 - this.Hurt / 40;
 
             if (speed < 0)
@@ -950,17 +952,6 @@ namespace Jyx2
                 int addHpMp = 3 + Random.Range(0, Tili / 10 - 2);
                 Hp = Tools.Limit(Hp + addHpMp, 0, MaxHp);
                 Mp = Tools.Limit(Mp + addHpMp, 0, MaxMp);
-                if (addHpMp > 0)
-                {
-                    this.View?.ShowAttackInfo($"<color=white>+{addHpMp}</color>");
-                    this.View.MarkHpBarIsDirty();
-                }
-
-                if (addHpMp > 0)
-                {
-                    this.View?.ShowAttackInfo($"<color=blue>+{addHpMp}</color>");
-                    this.View.MarkHpBarIsDirty();
-                }
             }
         }
 

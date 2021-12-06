@@ -202,7 +202,7 @@ namespace Jyx2
         //询问是否战斗
         public static bool AskBattle()
         {
-            return ShowYesOrNoSelectPanel("是否与之战斗?");
+            return ShowYesOrNoSelectPanel("是否与之过招?");
         }
 
         private static bool _battleResult = false;
@@ -1194,12 +1194,18 @@ namespace Jyx2
         /// 简单模式播放timeline，播放完毕后直接关闭
         /// </summary>
         /// <param name="timelineName"></param>
-        public static void jyx2_PlayTimelineSimple(string timelineName)
+        public static void jyx2_PlayTimelineSimple(string timelineName, bool hidePlayer = false)
         {
             RunInMainThread(() =>
             {
                 var timeLineRoot = GameObject.Find("Timeline");
                 var timeLineObj = timeLineRoot.transform.Find(timelineName);
+
+                if (hidePlayer)
+                {
+                    var player = LevelMaster.Instance.GetPlayer();
+                    player.gameObject.SetActive(false);
+                }
                 
                 if (timeLineObj == null)
                 {
@@ -1213,6 +1219,11 @@ namespace Jyx2
                 GameUtil.CallWithDelay(playableDirector.duration, () =>
                 {
                     timeLineObj.gameObject.SetActive(false);
+                    if (hidePlayer)
+                    {
+                        var player = LevelMaster.Instance.GetPlayer();
+                        player.gameObject.SetActive(true);
+                    }
                 });
             });
         }
