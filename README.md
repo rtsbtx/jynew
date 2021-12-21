@@ -1,5 +1,8 @@
 # 金庸群侠传3D重制版
 
+![主宣传图-616-353](https://user-images.githubusercontent.com/7448857/145429032-4cb357f9-077d-4450-acb2-bea62e9910d6.jpg)
+
+
 [![license](https://img.shields.io/badge/license-MIT%2B%E9%87%91%E7%BE%A43D%E9%87%8D%E5%88%B6%E7%89%88%E7%A4%BE%E5%8C%BA%E5%8D%8F%E8%AE%AE-blue)](https://github.com/jynew/jynew/blob/main/LICENSE)
 [![release](https://img.shields.io/badge/release-v0.1%20inner-brightgreen)](https://github.com/jynew/jynew/releases)
 [![Unity Version](https://img.shields.io/badge/unity-2020.3.23.f1c1-blue)](https://unity.cn/releases/lts/2020) 
@@ -10,12 +13,12 @@
 ![star](https://img.shields.io/github/stars/jynew/jynew?style=social)
 
 
-[包体下载](https://github.com/jynew/jynew/wiki/%E6%B8%B8%E6%88%8F%E4%B8%8B%E8%BD%BD) | [项目主页](http://www.jy-new.com) | [B站主页](https://space.bilibili.com/1092529660) | [联系我们](mailto://jy_remastered@163.com) | [项目Wiki](https://github.com/jynew/jynew/wiki) | [捐助项目](http://www.jy-new.com/redmine/projects/public/wiki/%E6%8D%90%E5%8A%A9%E9%A1%B9%E7%9B%AE) | [耻辱榜](https://github.com/jynew/jynew/wiki/%E8%80%BB%E8%BE%B1%E6%A6%9C)
+[包体下载](https://github.com/jynew/jynew/wiki/%E6%B8%B8%E6%88%8F%E4%B8%8B%E8%BD%BD) | [B站主页](https://space.bilibili.com/1092529660) | [联系我们](mailto://jy_remastered@163.com) | [项目Wiki](https://github.com/jynew/jynew/wiki) | [捐助项目](https://github.com/jynew/jynew/wiki/%E6%8D%90%E5%8A%A9%E9%A1%B9%E7%9B%AE) | [耻辱榜](https://github.com/jynew/jynew/wiki/%E8%80%BB%E8%BE%B1%E6%A6%9C)
 
 
 金庸群侠传3D重制版是一个非盈利游戏项目，重制经典游戏《[金庸群侠传](https://zh.wikipedia.org/wiki/%E9%87%91%E5%BA%B8%E7%BE%A4%E4%BF%A0%E5%82%B3)》（[在线玩DOS原版](https://dos.zczc.cz/games/%E9%87%91%E5%BA%B8%E7%BE%A4%E4%BE%A0%E4%BC%A0/)）并支持后续一系列MOD和二次开发。
 
-> 我们承诺：除了爱好者的自愿捐款以外，不会在任何渠道取得收入，游戏亦不会在任何游戏平台进行发布。最终的代码、资源、包体都仅供学习使用，请勿用于任何商业目的。一切再度商用均不被本项目允许和授权，如果有任何侵犯您的权益，欢迎与我们取得联系。
+> 我们承诺：除了爱好者的自愿捐款以外，不会在任何渠道取得收入，游戏亦不会在任何游戏平台进行发布。最终的代码、资源、包体都仅供学习使用，请勿用于任何商业目的。一切再度商用均不被本项目允许和授权，如果有任何侵犯您的权益，欢迎与我们取得联系。如果您想要表达支持，自愿捐款，请滑到页尾详见捐款信息。
 
 ## 项目目标
 
@@ -107,3 +110,4 @@
 
 * 开发者Q群 749167552 （入群密码是本代码仓库名称）
 * 玩家Q群 480072818
+

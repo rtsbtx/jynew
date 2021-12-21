@@ -184,7 +184,7 @@ public class MapRole : Jyx2AnimationBattleRole
             ExtraFloatSpeed = -11
         };
 
-        info.TextPrefab = Jyx2ResourceHelper.GetCachedPrefab("Assets/Prefabs/Jyx2/AttackInfoText.prefab");
+        info.TextPrefab = Jyx2ResourceHelper.GetCachedPrefab("AttackInfoText");
         hudRoot.NewText(info);
     }
 
@@ -220,7 +220,7 @@ public class MapRole : Jyx2AnimationBattleRole
         };
         info.Color = textColor;
 
-        info.TextPrefab = Jyx2ResourceHelper.GetCachedPrefab("Assets/Prefabs/Jyx2/AttackInfoText.prefab");
+        info.TextPrefab = Jyx2ResourceHelper.GetCachedPrefab("AttackInfoText");
         hudRoot.NewText(info);
     }
 
@@ -243,7 +243,7 @@ public class MapRole : Jyx2AnimationBattleRole
             ExtraFloatSpeed = -11
         };
 
-        info.TextPrefab = Jyx2ResourceHelper.GetCachedPrefab("Assets/Prefabs/Jyx2/AttackInfoText.prefab");
+        info.TextPrefab = Jyx2ResourceHelper.GetCachedPrefab("AttackInfoText");
         hudRoot.NewText(info);
     }
 
@@ -353,7 +353,7 @@ public class MapRole : Jyx2AnimationBattleRole
         //人型骨骼，播放死亡动作
         if (this._animator.runtimeAnimatorController == globalConfig.defaultAnimatorController)
         {
-            var clip = Hanjiasongshu.Tools.GetRandomElement(globalConfig.defaultDieClips);
+            var clip = Jyx2.Middleware.Tools.GetRandomElement(globalConfig.defaultDieClips);
             PlayAnimation(clip, () => { Destroy(gameObject); });
         }
         else

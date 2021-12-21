@@ -131,7 +131,6 @@ namespace Jyx2
             var rst = this;
             if (rst.damage > 0)
             {
-                if (rst.damage > r2.Hp) rst.damage = r2.Hp;
                 r2.Hp -= rst.damage;
 
                 if (r2.View != null)
@@ -149,6 +148,8 @@ namespace Jyx2
                 {
                     r2.Hp = r2.MaxHp;
                 }
+
+                r1.ExpGot += 2;
             }
 
             if (rst.damageMp > 0)
