@@ -17,7 +17,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
-
+using Jyx2.MOD;
 using Jyx2Configs;
 using ProtoBuf;
 using UnityEngine;
@@ -40,26 +40,6 @@ namespace Jyx2
             image.sprite = await task;
             image.gameObject.SetActive(true);
         }
-        
-        public static void LoadAsyncForget(this Image image, AssetReference reference)
-        {
-            LoadAsync(image, reference).Forget();
-        }
-    
-        public static async UniTask LoadAsync(this Image image, AssetReference reference)
-        {
-            image.gameObject.SetActive(false);
-            image.sprite = await LoadSprite(reference);
-            image.gameObject.SetActive(true);
-        }
-        
-        public static async UniTask<Sprite> LoadSprite(AssetReference refernce)
-        {
-            //注：不Release的话，Addressable会进行缓存
-            //https://forum.unity.com/threads/1-15-1-assetreference-not-allow-loadassetasync-twice.959910/
-
-            return await Addressables.LoadAssetAsync<Sprite>(refernce);
-        }
     }
 }
 
@@ -76,6 +56,8 @@ public static class Jyx2ResourceHelper
         }
 
         _isInited = true;
+
+        await MODLoader.Init();
         
         //全局配置表
         var t = await Addressables.LoadAssetAsync<GlobalAssetConfig>("Assets/BuildSource/Configs/GlobalAssetConfig.asset");
@@ -174,5 +156,22 @@ public static class Jyx2ResourceHelper
         }
 
         return await Addressables.LoadAssetAsync<Jyx2NodeGraph>(url).Task;
+    }
+    
+    //根据Addressable的Ref查找他实际存储的路径
+    public static string GetAssetRefAddress(AssetReference reference, Type type)
+    {
+        foreach (var locator in Addressables.ResourceLocators)
+        {
+            if (locator.Locate(reference.AssetGUID, type, out var locs))
+            {
+                foreach (var loc in locs)
+                {
+                    return loc.ToString();
+                }
+            }
+        }
+
+        return "";
     }
 }

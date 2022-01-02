@@ -78,7 +78,8 @@ public partial class SkillEditorUIPanel:Jyx2_UIBase
     {
         var role = allRole[index];
         roleKey = role.Id;
-        OnSwitchModel();
+        //下面这一行会触发模型更新，这样显得按钮很没有用，所以我取消了
+        //OnSwitchModel();
     }
 
     private void OnSwitchSkillLevel(int arg0)
@@ -98,7 +99,7 @@ public partial class SkillEditorUIPanel:Jyx2_UIBase
         base.OnShowPanel(allParams);
         player = allParams[0] as MapRole;
         enemys = allParams[1] as Jyx2SkillEditorEnemy[];
-        DoSwitchRoleModel().Forget();
+        //DoSwitchRoleModel().Forget();//这里也去掉，防止多次加载模型
     }
 
     private void OnSwitchModel()
@@ -120,10 +121,14 @@ public partial class SkillEditorUIPanel:Jyx2_UIBase
     {
         var role = new RoleInstance(this.roleKey);
         await player.BindRoleInstance(role);
+        await player.RefreshModel();//添加这一行刷新模型
         
-        var animator = player.GetAnimator();
-        animator.runtimeAnimatorController = player.GetComponent<Animator>().runtimeAnimatorController; //force set animator
-        SwitchSkillPose();
+        //不必要的指定
+        //var animator = player.GetAnimator();
+        //animator.runtimeAnimatorController = player.GetComponent<Animator>().runtimeAnimatorController; //force set animator
+        
+        //不必要切换姿势
+        //SwitchSkillPose();
     }
 
     void DoSwitchMove()

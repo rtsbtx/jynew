@@ -1,9 +1,11 @@
 # 金庸群侠传3D重制版
 
+[English HomePage](https://github.com/jynew/jynew/wiki/Heros-of-Jin-Yong-3D-Remastered)
+
 ![主宣传图-616-353](https://user-images.githubusercontent.com/7448857/145429032-4cb357f9-077d-4450-acb2-bea62e9910d6.jpg)
 
 
-[![license](https://img.shields.io/badge/license-MIT%2B%E9%87%91%E7%BE%A43D%E9%87%8D%E5%88%B6%E7%89%88%E7%A4%BE%E5%8C%BA%E5%8D%8F%E8%AE%AE-blue)](https://github.com/jynew/jynew/blob/main/LICENSE)
+[![license](https://img.shields.io/badge/license-%E9%87%91%E7%BE%A43D%E9%87%8D%E5%88%B6%E7%89%88%E7%A4%BE%E5%8C%BA%E5%8D%8F%E8%AE%AE-blue)](https://github.com/jynew/jynew/blob/main/LICENSE)
 [![release](https://img.shields.io/badge/release-v0.1%20inner-brightgreen)](https://github.com/jynew/jynew/releases)
 [![Unity Version](https://img.shields.io/badge/unity-2020.3.23.f1c1-blue)](https://unity.cn/releases/lts/2020) 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](https://github.com/jynew/jynew/pulls) 
@@ -11,14 +13,15 @@
 ![Contributors](https://img.shields.io/github/contributors-anon/jynew/jynew) 
 ![fork](https://img.shields.io/github/forks/jynew/jynew?style=social)
 ![star](https://img.shields.io/github/stars/jynew/jynew?style=social)
-
+ 
 
 [包体下载](https://github.com/jynew/jynew/wiki/%E6%B8%B8%E6%88%8F%E4%B8%8B%E8%BD%BD) | [B站主页](https://space.bilibili.com/1092529660) | [联系我们](mailto://jy_remastered@163.com) | [项目Wiki](https://github.com/jynew/jynew/wiki) | [捐助项目](https://github.com/jynew/jynew/wiki/%E6%8D%90%E5%8A%A9%E9%A1%B9%E7%9B%AE) | [耻辱榜](https://github.com/jynew/jynew/wiki/%E8%80%BB%E8%BE%B1%E6%A6%9C)
 
+金庸群侠传3D重制版是一个回合制战棋战斗开放世界RPG游戏。它是一个非盈利游戏项目，项目目标为重制经典游戏《[金庸群侠传](https://zh.wikipedia.org/wiki/%E9%87%91%E5%BA%B8%E7%BE%A4%E4%BF%A0%E5%82%B3)》（[在线玩DOS原版](https://dos.zczc.cz/games/%E9%87%91%E5%BA%B8%E7%BE%A4%E4%BE%A0%E4%BC%A0/)）并支持后续一系列MOD和二次开发。你可以在PC、MAC或移动手机平台(或其他支持平台)游玩。
 
-金庸群侠传3D重制版是一个非盈利游戏项目，重制经典游戏《[金庸群侠传](https://zh.wikipedia.org/wiki/%E9%87%91%E5%BA%B8%E7%BE%A4%E4%BF%A0%E5%82%B3)》（[在线玩DOS原版](https://dos.zczc.cz/games/%E9%87%91%E5%BA%B8%E7%BE%A4%E4%BE%A0%E4%BC%A0/)）并支持后续一系列MOD和二次开发。
+> 我们承诺：本项目除了爱好者的自愿捐款以外，不会在任何渠道取得收入。最终的代码、资源、包体都仅供学习使用，请勿用于任何商业目的。一切再度商用均不被本项目允许和授权，如果有任何侵犯您的权益，欢迎与我们取得联系。
+> 
 
-> 我们承诺：除了爱好者的自愿捐款以外，不会在任何渠道取得收入，游戏亦不会在任何游戏平台进行发布。最终的代码、资源、包体都仅供学习使用，请勿用于任何商业目的。一切再度商用均不被本项目允许和授权，如果有任何侵犯您的权益，欢迎与我们取得联系。如果您想要表达支持，自愿捐款，请滑到页尾详见捐款信息。
 
 ## 项目目标
 
@@ -26,6 +29,9 @@
 * 后续支持重制《金群》的一系列MOD或二次开发；
 * 提供开放的能力给社区，有兴趣贡献力量的朋友可以让这个作品更加完善；
 * 提供一个完备的单机游戏结构供有兴趣学习开发游戏的朋友进行参考；
+
+------
+
 
 ## 游戏画面截图
 
@@ -102,7 +108,6 @@
 [kyscpp](https://github.com/scarsty/kys-cpp)
 
 ## 特别补充说明
-
 以下插件仅供学习使用，若希望使用它还请自行购买重新导入：<br>
 [Odin Inspector](https://assetstore.unity.com/packages/tools/utilities/odin-inspector-and-serializer-89041)
 
