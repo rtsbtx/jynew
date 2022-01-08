@@ -18,7 +18,10 @@
 // - 各种MODSample
 
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Cysharp.Threading.Tasks;
+using Jyx2.Middleware;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -40,7 +43,7 @@ namespace Jyx2.MOD
         /// <summary>
         /// 存储所有的重载资源
         /// </summary>
-        private static readonly Dictionary<string, AssetBundleItem> _remap = new Dictionary<string, AssetBundleItem>();
+        public static readonly Dictionary<string, AssetBundleItem> _remap = new Dictionary<string, AssetBundleItem>();
 
         public static async UniTask Init()
         {
@@ -58,13 +61,18 @@ namespace Jyx2.MOD
                 Jyx2ModInstance modInstance = new Jyx2ModInstance() { uri = modUri, assetBundle = ab };
 
                 //记录和复写所有的MOD重载资源
-                foreach (var name in ab.GetAllAssetNames())
+                foreach (var name in ab.GetAllPaths())
                 {
                     Debug.Log($"mod file:{name}");
-                    string overrideAddr = "assets/" + name.Substring(name.IndexOf("buildsource"));
+                    string overrideAddr = name.Replace('/' + name.Split('/')[1], "");
                     _remap[overrideAddr] = new AssetBundleItem() { Name = name, Ab = ab };
                 }
             }
+        }
+
+        private static string[] GetAllPaths(this AssetBundle ab)
+        {
+            return ab.GetAllScenePaths().Concat(ab.GetAllAssetNames()).ToArray();
         }
 
 #region 复合MOD加载资源的接口
@@ -97,6 +105,42 @@ namespace Jyx2.MOD
             return assets;
         }
 #endregion
+
+        public static void SaveOverrideList(string path, string filter)
+        {
+            var dir = Application.persistentDataPath + "/mods/" + path.Split('/')[0];
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            string filePath = Application.persistentDataPath + "/mods/" + path + ".txt";
+            if (File.Exists(filePath))
+                return;
+            var fileContentsList = GetOverridePaths("Assets/BuildSource/" + path, filter);
+            File.WriteAllLines(filePath, fileContentsList.ToArray());
+        }
+
+        private static List<string> GetOverridePaths(string path, string filter)
+        {
+            var fileList = new List<string>();
+            var overrideList = new List<string>();
+            FileTools.GetAllFilePath(path, fileList, new List<string>() { filter });
+
+            foreach (var filePath in fileList)
+            {
+                var overridePath = filePath.Substring(filePath.IndexOf("Assets"));
+                overrideList.Add(overridePath);
+            }
+            
+            return overrideList;
+        }
+
+        public static List<string> LoadOverrideList(string path)
+        {
+            string filePath = Application.persistentDataPath + "/mods/" + path + ".txt";
+            var fileContentsList = File.ReadAllLines(filePath);
+            return fileContentsList.ToList();
+        }
     }
 
     public class Jyx2ModInstance
