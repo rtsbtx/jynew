@@ -19,6 +19,7 @@ using XLua;
 using UnityEngine.Playables;
 using Sirenix.Utilities;
 using Cysharp.Threading.Tasks;
+using i18n.TranslatorDef;
 using Jyx2Configs;
 using Jyx2.Middleware;
 
@@ -1019,11 +1020,25 @@ namespace Jyx2
 
                 if (count < 0)
                 {
-                    storyEngine.DisplayPopInfo("失去物品:" + item.Name + "×" + Math.Abs(count));
+                    //---------------------------------------------------------------------------
+                    //storyEngine.DisplayPopInfo("失去物品:" + item.Name + "×" + Math.Abs(count));
+                    //---------------------------------------------------------------------------
+                    //特定位置的翻译【得到物品提示】
+                    //---------------------------------------------------------------------------
+                    storyEngine.DisplayPopInfo("失去物品:".GetContent(nameof(Jyx2LuaBridge)) + item.Name + "×" + Math.Abs(count));
+                    //---------------------------------------------------------------------------
+                    //---------------------------------------------------------------------------
                 }
                 else
                 {
-                    storyEngine.DisplayPopInfo("得到物品:" + item.Name + "×" + Math.Abs(count));
+                    //---------------------------------------------------------------------------
+                    //storyEngine.DisplayPopInfo("得到物品:" + item.Name + "×" + Math.Abs(count));
+                    //---------------------------------------------------------------------------
+                    //特定位置的翻译【得到物品提示】
+                    //---------------------------------------------------------------------------
+                    storyEngine.DisplayPopInfo("得到物品:".GetContent(nameof(Jyx2LuaBridge)) + item.Name + "×" + Math.Abs(count));
+                    //---------------------------------------------------------------------------
+                    //---------------------------------------------------------------------------
                 }
 
                 runtime.AddItem(itemId, count);
@@ -1279,9 +1294,9 @@ namespace Jyx2
                     {
                         if (clonePlayer == null)
                         {
-                            clonePlayer = GameObject.Instantiate(GameRuntimeData.Instance.Player.View.GetAnimator());
+                            clonePlayer = GameObject.Instantiate(Jyx2Player.GetPlayer().m_Animator);
                             clonePlayer.runtimeAnimatorController = null;
-                            GameRuntimeData.Instance.Player.View.gameObject.SetActive(false);
+                            Jyx2Player.GetPlayer().gameObject.SetActive(false);
                         }
 
                         DoPlayTimeline(playableDirector, clonePlayer.gameObject);
@@ -1294,7 +1309,8 @@ namespace Jyx2
                         {
                             if (playableBinding.outputTargetType == typeof(Animator))
                             {
-                                playableDirector.SetGenericBinding(playableBinding.sourceObject, GameRuntimeData.Instance.Player.View.GetAnimator().gameObject);
+                                var bindPlayerObj = Jyx2Player.GetPlayer().m_Animator.gameObject;
+                                playableDirector.SetGenericBinding(playableBinding.sourceObject, bindPlayerObj);
                             }
                         });
                     }
@@ -1352,9 +1368,11 @@ namespace Jyx2
                 playableDiretor.stopped -= TimeLineNext;
                 timeLineObj.gameObject.SetActive(false);
 
-                GameRuntimeData.Instance.Player.View.gameObject.SetActive(true);
-                GameRuntimeData.Instance.Player.View.GetAnimator().transform.localPosition = Vector3.zero;
-                GameRuntimeData.Instance.Player.View.GetAnimator().transform.localRotation = Quaternion.Euler(Vector3.zero);
+                var player = Jyx2Player.GetPlayer();
+                
+                player.gameObject.SetActive(true);
+                player.m_Animator.transform.localPosition = Vector3.zero;
+                player.m_Animator.transform.localRotation = Quaternion.Euler(Vector3.zero);
                 if(clonePlayer != null)
                 {
                     GameObject.Destroy(clonePlayer.gameObject);
@@ -1389,7 +1407,7 @@ namespace Jyx2
         /// </summary>
         /// <param name="rolePath"></param>
         /// <param name="animationControllerPath"></param>
-        public static void jyx2_SwitchRoleAnimation(string rolePath, string animationControllerPath)
+        public static void jyx2_SwitchRoleAnimation(string rolePath, string animationControllerPath, string scene = "")
         {
             Debug.Log("jyx2_SwitchRoleAnimation called");
 
@@ -1403,7 +1421,7 @@ namespace Jyx2
                     return;
                 }
 
-                level.ReplaceNpcAnimatorController("", rolePath, animationControllerPath);
+                level.ReplaceNpcAnimatorController(scene, rolePath, animationControllerPath);
                 Next();
             });
             Wait();
@@ -1462,11 +1480,40 @@ namespace Jyx2
             LightScence();
         }
 
+        public static void jyx2_SetFlag(string flagKey, string value)
+        {
+            runtime.SetKeyValues(GetCustomerFlagPrefix(flagKey), value);
+        }
+
+        public static string jyx2_GetFlag(string flagKey)
+        {
+            if(runtime.KeyExist(GetCustomerFlagPrefix(flagKey)))
+                return runtime.GetKeyValues(GetCustomerFlagPrefix(flagKey));
+            return "";
+        }
+        
+        public static void jyx2_SetFlagInt(string flagKey, int value)
+        {
+            runtime.SetKeyValues(GetCustomerFlagPrefix(flagKey), value.ToString());
+        }
+
+        public static int jyx2_GetFlagInt(string flagKey)
+        {
+            if(runtime.KeyExist(GetCustomerFlagPrefix(flagKey)))
+                return int.Parse(runtime.GetKeyValues(GetCustomerFlagPrefix(flagKey)));
+            return 0;
+        }
+
         #endregion
 
 
         #region private
 
+        private static string GetCustomerFlagPrefix(string flag)
+        {
+            return "CustomerFlag_" + flag;
+        }
+        
         private static void RunInMainThread(Action run)
         {
             Loom.QueueOnMainThread(_ =>

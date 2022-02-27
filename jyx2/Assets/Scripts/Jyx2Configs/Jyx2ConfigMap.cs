@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using i18n.TranslatorDef;
 using Jyx2;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -42,11 +43,19 @@ namespace Jyx2Configs
         public override async UniTask WarmUp()
         {
             _isWorldMap = Tags.Contains("WORLDMAP");
+            _isNoNavAgent = Tags.Contains("NONAVAGENT");
         }
         
         public string GetShowName()
         {
-            if ("小虾米居".Equals(Name)) return GameRuntimeData.Instance.Player.Name + "居";
+            //---------------------------------------------------------------------------
+            //if ("小虾米居".Equals(Name)) return GameRuntimeData.Instance.Player.Name + "居";
+            //---------------------------------------------------------------------------
+            //特定位置的翻译【小地图左上角的主角居显示】
+            //---------------------------------------------------------------------------
+            if (GlobalAssetConfig.Instance.defaultHomeName.Equals(Name)) return GameRuntimeData.Instance.Player.Name + "居".GetContent(nameof(Jyx2ConfigMap));
+            //---------------------------------------------------------------------------
+            //---------------------------------------------------------------------------
             return Name;
         }
         
@@ -69,6 +78,13 @@ namespace Jyx2Configs
         /// <returns></returns>
         public bool IsWorldMap() { return _isWorldMap;}
         private bool _isWorldMap;
+        
+        /// <summary>
+        /// 是否不能寻路
+        /// </summary>
+        /// <returns></returns>
+        public bool IsNoNavAgent() { return _isNoNavAgent;}
+        private bool _isNoNavAgent;
 
 #if UNITY_EDITOR
 

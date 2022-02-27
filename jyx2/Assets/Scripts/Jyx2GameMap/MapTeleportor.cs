@@ -9,6 +9,7 @@
  */
 using System;
 using Cysharp.Threading.Tasks;
+using i18n.TranslatorDef;
 using Jyx2;
 using Jyx2Configs;
 using NUnit.Framework;
@@ -37,8 +38,6 @@ public class MapTeleportor : MonoBehaviour
 	private async void Start()
 	{
 		await BeforeSceneLoad.loadFinishTask;
-
-		await UniTask.Delay(TimeSpan.FromSeconds(1f)); //等1秒再生效
 		triggerEnabled = true;
 	}
 
@@ -47,7 +46,14 @@ public class MapTeleportor : MonoBehaviour
 	async void OnTriggerEnter(Collider other)
 	{
 		if (!triggerEnabled) return;
-		await ShowEnterButton(m_GameMap.Id, TransportTriggerName, ButtonText);
+		//---------------------------------------------------------------------------
+		//await ShowEnterButton(m_GameMap.Id, TransportTriggerName, ButtonText);
+		//---------------------------------------------------------------------------
+		//特定位置的翻译【地图传送按钮的文本显示，一般为离开】
+		//---------------------------------------------------------------------------
+		await ShowEnterButton(m_GameMap.Id, TransportTriggerName, ButtonText.GetContent(nameof(MapTeleportor)));
+		//---------------------------------------------------------------------------
+		//---------------------------------------------------------------------------
 		UnityTools.HighLightObjects(m_EventTargets, Color.red);
 	}
 
@@ -96,10 +102,7 @@ public class MapTeleportor : MonoBehaviour
 			showText = "进入";
 		}
 
-		await Jyx2_UIManager.Instance.ShowUIAsync(nameof(InteractUIPanel), showText, new Action(() =>
-		{
-			DoTransport();
-		}));
+		await Jyx2_UIManager.Instance.ShowUIAsync(nameof(InteractUIPanel), showText, new Action(DoTransport));
 	}
 
 	public void DoTransport()
@@ -145,6 +148,10 @@ public class MapTeleportor : MonoBehaviour
 		}
 			
 		//开始加载
-		LevelLoader.LoadGameMap(nextMap, para);
+		LevelLoader.LoadGameMap(nextMap, para, () =>
+		{
+			var player = LevelMaster.Instance.GetPlayer();
+			player.OnSceneLoad().Forget();
+		});
 	}
 }

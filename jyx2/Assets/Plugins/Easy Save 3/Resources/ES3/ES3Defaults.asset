@@ -36,6 +36,7 @@ MonoBehaviour:
     - UniTask.Linq
     - Cinemachine
     - GPUInstancer
+    - MTE_script
     - Animancer.Examples
     - LeanCommon
     - Animancer

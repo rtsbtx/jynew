@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using i18n.TranslatorDef;
 using Jyx2;
 
 using Jyx2;
@@ -139,7 +140,14 @@ public class BattleLoader : MonoBehaviour
             SelectRoleParams selectPram = new SelectRoleParams();
             selectPram.roleList = runtime.GetTeam().ToList();
             selectPram.mustSelect = MustRoleFunc;
-            selectPram.title = "选择上场角色";
+            //---------------------------------------------------------------------------
+            //selectPram.title = "选择上场角色";
+            //---------------------------------------------------------------------------
+            //特定位置的翻译【战斗中选择上场角色的文字显示】
+            //---------------------------------------------------------------------------
+            selectPram.title = "选择上场角色".GetContent(nameof(BattleLoader));
+            //---------------------------------------------------------------------------
+            //---------------------------------------------------------------------------
             selectPram.maxCount = GameConst.MAX_BATTLE_TEAMMATE_COUNT; //TODO 最大上场人数
             selectPram.canCancel = false;
 
@@ -266,7 +274,7 @@ public class BattleLoader : MonoBehaviour
             npcRoot = new GameObject("BattleRoles");
         }
 
-        MapRole roleView;
+        BattleRole roleView;
         //JYX2苟且逻辑：找第一个能找到的角色设置为主角
         if (!setPlayer)
         {
@@ -282,7 +290,6 @@ public class BattleLoader : MonoBehaviour
         
         roleView.transform.SetParent(npcRoot.transform, false);
         roleView.transform.position = pos.position;
-
         role.team = team;
         return roleView.RefreshModel(); //刷新模型
     }

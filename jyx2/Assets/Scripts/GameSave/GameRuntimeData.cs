@@ -13,7 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using ES3Types;
-
+using i18n.TranslatorDef;
 using Jyx2Configs;
 using UnityEngine;
 
@@ -166,26 +166,39 @@ namespace Jyx2
             //PlayerPrefs.SetString(ARCHIVE_SUMMARY_PREFIX + index, summaryInfo);
         }
 
-        public static string GetSaveSummary(int index)
-        {
-            string summaryInfo = "";
-            var summaryInfoFilePath = string.Format(ARCHIVE_SUMMARY_FILE_NAME, index);
-            if (ES3.FileExists(summaryInfoFilePath))
-            {
-                summaryInfo = ES3.Load<string>("summary", summaryInfoFilePath);
-            }else //CGGG：否则使用老的方式进行载入，适配老存档，此处待删除
-            {
-                var summaryInfoKey = ARCHIVE_SUMMARY_PREFIX + index;
-                if (PlayerPrefs.HasKey(summaryInfoKey))
-                {
-                    summaryInfo = PlayerPrefs.GetString(summaryInfoKey);
-                }
-            }
-
-            return summaryInfo;
+        public static DateTime? GetSaveDate(int index)
+		{
+            var summaryInfoFilePath = getSaveFileName(index);
+            return ES3.FileExists(summaryInfoFilePath) ?
+                 ((DateTime?) ES3.GetTimestamp(summaryInfoFilePath)) : null;
         }
 
-        public void SaveToFile(int fileIndex)
+        public static string GetSaveSummary(int index)
+		{
+			string summaryInfo = "";
+			var summaryInfoFilePath = getSaveFileName(index);
+			if (ES3.FileExists(summaryInfoFilePath))
+			{
+				summaryInfo = ES3.Load<string>("summary", summaryInfoFilePath);
+			}
+			else //CGGG：否则使用老的方式进行载入，适配老存档，此处待删除
+			{
+				var summaryInfoKey = ARCHIVE_SUMMARY_PREFIX + index;
+				if (PlayerPrefs.HasKey(summaryInfoKey))
+				{
+					summaryInfo = PlayerPrefs.GetString(summaryInfoKey);
+				}
+			}
+
+			return summaryInfo;
+		}
+
+		private static string getSaveFileName(int index)
+		{
+			return string.Format(ARCHIVE_SUMMARY_FILE_NAME, index);
+		}
+
+		public void SaveToFile(int fileIndex)
         {
             string path = string.Format(ARCHIVE_FILE_NAME, fileIndex);
             ES3.Save(nameof(GameRuntimeData), this, path);
@@ -256,7 +269,14 @@ namespace Jyx2
                     ItemAdded.Add(item.Item.Id);
                     if (item.Count > 0 && showGetItem)
                     {
-                        StoryEngine.Instance.DisplayPopInfo("得到物品:" + item.Item.Name + "×" + Math.Abs(item.Count));
+                        //---------------------------------------------------------------------------
+                        //StoryEngine.Instance.DisplayPopInfo("得到物品:" + item.Item.Name + "×" + Math.Abs(item.Count));
+                        //---------------------------------------------------------------------------
+                        //特定位置的翻译【得到物品提示】
+                        //---------------------------------------------------------------------------
+                        StoryEngine.Instance.DisplayPopInfo("得到物品:".GetContent(nameof(GameRuntimeData)) + item.Item.Name + "×" + Math.Abs(item.Count));
+                        //---------------------------------------------------------------------------
+                        //---------------------------------------------------------------------------
                     }
                     item.Count = 0;
                 }

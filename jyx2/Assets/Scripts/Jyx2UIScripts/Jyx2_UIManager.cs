@@ -8,9 +8,12 @@
  * 金庸老先生千古！
  */
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
+using i18n.TranslatorDef;
 using Jyx2.MOD;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -61,10 +64,61 @@ public class Jyx2_UIManager : MonoBehaviour
         m_topParent = transform.Find("Top");
     }
 
-    public async void GameStart()
+    public bool IsTopVisibleUI(Jyx2_UIBase ui)
+	{
+        if (!ui.gameObject.activeSelf)
+            return false;
+
+        if (ui.Layer == UILayer.MainUI)
+		{
+			//make sure no normal and popup ui on top
+			return noShowingNormalUi() &&
+				(noInterferingPopupUI());
+		}
+		else if (ui.Layer == UILayer.NormalUI)
+		{
+            Jyx2_UIBase currentUi = m_normalUIStack.Count > 0 ? m_normalUIStack.Peek() : null;
+            if (currentUi == null)
+                return true;
+            
+			return (ui == currentUi || ui.transform.IsChildOf(currentUi.transform)) && noInterferingPopupUI();
+		}
+        else if (ui.Layer == UILayer.PopupUI)
+		{
+            return (m_PopUIStack.Count > 0 ? m_PopUIStack.Peek() : null) == ui;
+		}
+        else if (ui.Layer == UILayer.Top)
+		{
+            return true;
+		}
+
+        return false;
+	}
+
+	private bool noShowingNormalUi()
+	{
+        return !m_normalUIStack
+            .Any(ui => ui.gameObject.activeSelf);
+	}
+
+	private bool noInterferingPopupUI()
+	{
+        //common tips panel has no interaction, doesn't count towards active uis
+        return !m_normalUIStack
+            .Any(ui => ui.gameObject.activeSelf) || (m_PopUIStack.All(p => p is CommonTipsUIPanel));
+	}
+
+	public async void GameStart()
     {
         await ShowUIAsync(nameof(GameMainMenu));
-        await ShowUIAsync(nameof(GameInfoPanel),$"当前版本：{Application.version}");
+        //---------------------------------------------------------------------------
+        //await ShowUIAsync(nameof(GameInfoPanel),$"当前版本：{Application.version}");
+        //---------------------------------------------------------------------------
+        //特定位置的翻译【MainMenu右下角当前版本的翻译】
+        //---------------------------------------------------------------------------
+        await ShowUIAsync(nameof(GameInfoPanel), string.Format("当前版本：{0}".GetContent(nameof(Jyx2_UIManager)), Application.version));
+        //---------------------------------------------------------------------------
+        //---------------------------------------------------------------------------
         GraphicSetting.GlobalSetting.Execute();
     }
 
@@ -151,6 +205,9 @@ public class Jyx2_UIManager : MonoBehaviour
         Transform parent = GetUIParent(uibase.Layer);
         go.transform.SetParent(parent);
 
+		//听取ui的 OnVisibilityToggle event
+		uibase.VisibilityToggled += Uibase_OnVisibilityToggle;
+
         uibase.Init();
         m_uiDic[uiName] = uibase;
         if (uibase.IsOnly)//如果这个层唯一存在 那么先关闭其他
@@ -161,8 +218,15 @@ public class Jyx2_UIManager : MonoBehaviour
         _loadingUIParams.Remove(uiName);
     }
 
-    //显示主界面 LoadingPanel中加载完场景调用 移到这里来 方便修改
-    public async UniTask ShowMainUI()
+	private void Uibase_OnVisibilityToggle(Jyx2_UIBase ui, bool obj)
+	{
+		UIVisibilityToggled?.Invoke(ui, obj);
+	}
+
+    public event Action<Jyx2_UIBase, bool> UIVisibilityToggled;
+
+	//显示主界面 LoadingPanel中加载完场景调用 移到这里来 方便修改
+	public async UniTask ShowMainUI()
     {
         var map = LevelMaster.GetCurrentGameMap();
         /*if (map == null)
