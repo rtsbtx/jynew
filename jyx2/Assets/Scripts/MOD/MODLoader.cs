@@ -31,7 +31,33 @@ using Object = UnityEngine.Object;
 namespace Jyx2.MOD
 {
     public static class MODLoader
-    { 
+    {
+        
+        
+        public static void WriteModIndexFile(string path)
+        {
+#if UNITY_EDITOR
+
+            string indexPath = Path.Combine(path, "index.txt");
+
+            if (File.Exists(indexPath))
+            {
+                File.Delete(indexPath);
+            }
+
+
+            SaveOverrideList(indexPath, $"{path}/Skills", ".asset");
+            SaveOverrideList(indexPath, $"{path}/Configs/Characters", ".asset");
+            SaveOverrideList(indexPath, $"{path}/Configs/Items", ".asset");
+            SaveOverrideList(indexPath, $"{path}/Configs/Skills", ".asset");
+            SaveOverrideList(indexPath, $"{path}/Configs/Shops", ".asset");
+            SaveOverrideList(indexPath, $"{path}/Configs/Maps", ".asset");
+            SaveOverrideList(indexPath, $"{path}/Configs/Battles", ".asset");
+            SaveOverrideList(indexPath, $"{path}/Lua", ".lua");
+#endif
+        }
+        
+        
         public struct AssetBundleItem
         {
             public string Name;
@@ -92,12 +118,11 @@ namespace Jyx2.MOD
         }
 #endregion
 
-        public static void SaveOverrideList(string path, string filter)
+        private static void SaveOverrideList(string indexPath, string path, string filter)
         {
-            string filePath = Path.Combine(Application.streamingAssetsPath, "OverrideList.txt");
-            var fileContentsList = GetOverridePaths(path, filter);
 #if UNITY_EDITOR
-            File.AppendAllLines(filePath, fileContentsList.ToArray());
+            var fileContentsList = GetOverridePaths(path, filter);
+            File.AppendAllLines(indexPath, fileContentsList.ToArray());
 #endif
         }
 
@@ -116,22 +141,24 @@ namespace Jyx2.MOD
             return overrideList;
         }
 
-        public static List<string> LoadOverrideList(string path)
+        public static async UniTask<List<string>> LoadOverrideList(string path)
         {
-            string filePath = Path.Combine(Application.streamingAssetsPath, "OverrideList.txt");
-            List<string> fileContentsList;
-            if (Application.platform == RuntimePlatform.Android)
+            //string rootPath = GlobalAssetConfig.Instance.startMod.ModRootDir;
+            string filePath = GlobalAssetConfig.Instance.startMod.ModRootDir +  "/index.txt";
+            var content = await Addressables.LoadAssetAsync<TextAsset>(filePath);
+            var fileContentsList = content.text.Split(new string[] {"\r\n"}, StringSplitOptions.None);
+            
+            /*if (Application.platform == RuntimePlatform.Android)
             {
                 UnityWebRequest request = UnityWebRequest.Get(filePath);
-                request.SendWebRequest();
-                while (!request.isDone) { }
+                await request.SendWebRequest();
                 string textString = request.downloadHandler.text;
                 fileContentsList = textString.Split(new string[] { "\r\n" }, StringSplitOptions.None).ToList();
             }
             else
             {
                 fileContentsList = File.ReadAllLines(filePath).ToList(); 
-            }
+            }*/
             
             var lineList = fileContentsList.Where(line => line.StartsWith(path)).ToList();
             

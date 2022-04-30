@@ -11,6 +11,7 @@ using UnityEngine;
 using Jyx2;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using i18n.TranslatorDef;
 using Jyx2.Middleware;
 using UnityEngine.UI;
@@ -236,6 +237,7 @@ public partial class GameMainMenu : Jyx2_UIBase
 
 	public void OnNewGameClicked()
 	{
+		transform.Find("mainPanel/ExtendPanel")?.gameObject.SetActive(false); 
 		OnNewGame();
 	}
 
@@ -259,9 +261,25 @@ public partial class GameMainMenu : Jyx2_UIBase
 		//---------------------------------------------------------------------------
 		await Jyx2_UIManager.Instance.ShowUIAsync(nameof(SavePanel), new Action<int>((index) =>
 		{
-			if (!StoryEngine.DoLoadGame(index) && m_panelType == PanelType.LoadGamePage)
+			var summary = GameSaveSummary.Load(index);
+			if (summary.ModId != null && !summary.ModId.Equals(GlobalAssetConfig.Instance.startMod.ModId))
 			{
-				OnNewGame();
+				List<string> selectionContent = new List<string>() {"是(Y)", "否(N)"};
+				string msg = "该存档MOD不匹配，载入可能导致数据错乱，是否继续？";
+				Jyx2_UIManager.Instance.ShowUIAsync(nameof(ChatUIPanel), ChatType.Selection, "0", msg, selectionContent, new Action<int>((index) =>
+				{
+					if (index == 0)
+					{
+						StoryEngine.DoLoadGame(index);
+					}
+				})).Forget();
+			}
+			else
+			{
+				if (!StoryEngine.DoLoadGame(index) && m_panelType == PanelType.LoadGamePage)
+				{
+					OnNewGame();
+				}
 			}
 		}), "选择读档位".GetContent(nameof(GameMainMenu)), new Action(() =>
 		 {
@@ -330,6 +348,12 @@ public partial class GameMainMenu : Jyx2_UIBase
 		//加载地图
 		var startMap = Jyx2ConfigMap.GetGameStartMap();
 
+		string startTrigger = startMap.GetTagValue("START");
+		if (!string.IsNullOrEmpty(startTrigger))
+		{
+			loadPara.triggerName = startTrigger;
+		}
+		
 		LevelLoader.LoadGameMap(startMap, loadPara, () =>
 		{
 			//首次进入游戏音乐
@@ -402,6 +426,8 @@ public partial class GameMainMenu : Jyx2_UIBase
 		this.homeBtnAndTxtPanel_RectTransform.gameObject.SetActive(true);
 		this.InputNamePanel_RectTransform.gameObject.SetActive(false);
 		m_panelType = PanelType.Home;
+		
+		transform.Find("mainPanel/ExtendPanel")?.gameObject.SetActive(true);
 	}
 
 	protected override void OnHidePanel()
@@ -427,9 +453,17 @@ public partial class GameMainMenu : Jyx2_UIBase
 	/// </summary>
 	public void OpenSettingsPanel()
 	{
-		Jyx2_UIManager.Instance.ShowUI(nameof(GraphicSettingsPanel));
+		Jyx2_UIManager.Instance.ShowUIAsync(nameof(GameSettingsPanel)).Forget();
 	}
 
+	/// <summary>
+	/// 打开mod界面
+	/// </summary>
+	public void OpenModPanel()
+	{
+		Jyx2_UIManager.Instance.ShowUIAsync(nameof(ModPanel)).Forget();
+	}
+	
 	bool isXSelection = false;
 
 	protected override void OnDirectionalLeft()

@@ -276,13 +276,31 @@ public partial class XiakeUIPanel : Jyx2_UIBase
 		var eventLuaPath = GameConfigDatabase.Instance.Get<Jyx2ConfigCharacter>(m_currentRole.GetJyx2RoleId()).LeaveStoryId;
 		if (!string.IsNullOrEmpty(eventLuaPath))
 		{
-			Jyx2.LuaExecutor.Execute("jygame/ka" + eventLuaPath, RefreshView);
+			PlayLeaveStory(eventLuaPath).Forget();
+			
 		}
 		else
 		{
 			GameRuntimeData.Instance.LeaveTeam(m_currentRole.GetJyx2RoleId());
 			RefreshView();
 		}
+	}
+
+
+	async UniTask PlayLeaveStory(string story)
+	{
+		this.gameObject.SetActive(false);
+		var s = new UniTaskCompletionSource();
+
+		var eventPath = string.Format(GlobalAssetConfig.Instance.startMod.LuaFilePatten, story);
+		
+		Jyx2.LuaExecutor.Execute(eventPath, () =>
+		{
+			s.TrySetResult();
+		});
+		await s.Task;
+		this.gameObject.SetActive(true);
+		RefreshView();
 	}
 
 	void RefreshView()
@@ -393,15 +411,18 @@ public partial class XiakeUIPanel : Jyx2_UIBase
 			Callback,
 			(item) =>
 			{
-				return (int)item.ItemType == 2 && (runtime.GetItemUser(item.Id) == m_currentRole.GetJyx2RoleId() || runtime.GetItemUser(item.Id) == -1);
+				return (int) item.ItemType == 2 && (runtime.GetItemUser(item.Id) == m_currentRole.GetJyx2RoleId() ||
+				                                    runtime.GetItemUser(item.Id) == -1);
 			},
 			m_currentRole.Xiulianwupin);
 	}
 
 	async UniTask SelectFromBag(Action<int> Callback, Func<Jyx2ConfigItem, bool> filter, int current_itemId)
 	{
+		this.gameObject.SetActive(false);
 		await Jyx2_UIManager.Instance.ShowUIAsync(nameof(BagUIPanel), runtime.Items, new Action<int>((itemId) =>
 		{
+			this.gameObject.SetActive(true);
 			if (itemId != -1 && !m_currentRole.CanUseItem(itemId))
 			{
 				var item = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(itemId);
@@ -427,6 +448,7 @@ public partial class XiakeUIPanel : Jyx2_UIBase
 		selectParams.isDefaultSelect = false;
 		selectParams.callback = (cbParam) =>
 		{
+			this.gameObject.SetActive(true);
 			StoryEngine.Instance.BlockPlayerControl = false;
 			if (cbParam.isCancelClick == true)
 			{
@@ -438,18 +460,18 @@ public partial class XiakeUIPanel : Jyx2_UIBase
 			}
 
 			var selectRole = cbParam.selectList[0]; //默认只会选择一个
-			var zhaoshi = new HealZhaoshiInstance(m_currentRole.Heal);
+			var skillCast = new HealSkillCastInstance(m_currentRole.Heal);
 			var result =
-				AIManager.Instance.GetSkillResult(m_currentRole, selectRole, zhaoshi, new BattleBlockVector(0, 0));
+				AIManager.Instance.GetSkillResult(m_currentRole, selectRole, skillCast, new BattleBlockVector(0, 0));
 			result.Run();
 			if (result.heal > 0)
 			{
 				m_currentRole.Tili -= 2;
 			}
-
 			DoRefresh();
 		};
 
+		this.gameObject.SetActive(false);
 		await Jyx2_UIManager.Instance.ShowUIAsync(nameof(SelectRolePanel), selectParams);
 	}
 
@@ -461,6 +483,7 @@ public partial class XiakeUIPanel : Jyx2_UIBase
 		selectParams.isDefaultSelect = false;
 		selectParams.callback = (cbParam) =>
 		{
+			this.gameObject.SetActive(true);
 			StoryEngine.Instance.BlockPlayerControl = false;
 			if (cbParam.isCancelClick == true)
 			{
@@ -472,18 +495,18 @@ public partial class XiakeUIPanel : Jyx2_UIBase
 			}
 
 			var selectRole = cbParam.selectList[0]; //默认只会选择一个
-			var zhaoshi = new DePoisonZhaoshiInstance(m_currentRole.DePoison);
+			var skillCast = new DePoisonSkillCastInstance(m_currentRole.DePoison);
 			var result =
-				AIManager.Instance.GetSkillResult(m_currentRole, selectRole, zhaoshi, new BattleBlockVector(0, 0));
+				AIManager.Instance.GetSkillResult(m_currentRole, selectRole, skillCast, new BattleBlockVector(0, 0));
 			result.Run();
 			if (result.depoison < 0)
 			{
 				m_currentRole.Tili -= 2;
 			}
-
 			DoRefresh();
 		};
 
+		this.gameObject.SetActive(false);
 		await Jyx2_UIManager.Instance.ShowUIAsync(nameof(SelectRolePanel), selectParams);
 	}
 

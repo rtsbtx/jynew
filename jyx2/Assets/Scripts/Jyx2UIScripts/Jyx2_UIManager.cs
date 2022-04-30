@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using i18n.TranslatorDef;
+using Jyx2;
 using Jyx2.MOD;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -111,14 +112,15 @@ public class Jyx2_UIManager : MonoBehaviour
 	public async void GameStart()
     {
         await ShowUIAsync(nameof(GameMainMenu));
-        //---------------------------------------------------------------------------
-        //await ShowUIAsync(nameof(GameInfoPanel),$"当前版本：{Application.version}");
-        //---------------------------------------------------------------------------
-        //特定位置的翻译【MainMenu右下角当前版本的翻译】
-        //---------------------------------------------------------------------------
-        await ShowUIAsync(nameof(GameInfoPanel), string.Format("当前版本：{0}".GetContent(nameof(Jyx2_UIManager)), Application.version));
-        //---------------------------------------------------------------------------
-        //---------------------------------------------------------------------------
+
+        await BeforeSceneLoad.loadFinishTask;
+        
+        string info = string.Format("<b>版本：{0} 模组：{1}</b>".GetContent(nameof(Jyx2_UIManager)),
+            Application.version,
+            GlobalAssetConfig.Instance.startMod.ModName);
+        
+        await ShowUIAsync(nameof(GameInfoPanel), info);
+        
         GraphicSetting.GlobalSetting.Execute();
     }
 
@@ -140,32 +142,7 @@ public class Jyx2_UIManager : MonoBehaviour
     }
 
     Dictionary<string, object[]> _loadingUIParams = new Dictionary<string, object[]>();
-    public void ShowUI(string uiName,params object[] allParams) 
-    {
-        Jyx2_UIBase uibase;
-        if (m_uiDic.ContainsKey(uiName))
-        {
-            uibase = m_uiDic[uiName];
-            if (uibase.IsOnly)//如果这个层唯一存在 那么先关闭其他
-                PopAllUI(uibase.Layer);
-            PushUI(uibase);
-            uibase.Show(allParams);
-        }
-        else
-        {
-            if (_loadingUIParams.ContainsKey(uiName)) //如果正在加载这个UI 那么覆盖参数
-            {
-                _loadingUIParams[uiName] = allParams;
-                return;
-            }
-
-            _loadingUIParams[uiName] = allParams;
-            string uiPath = string.Format(GameConst.UI_PREFAB_PATH, uiName);
-
-            Addressables.InstantiateAsync(uiPath).Completed += r => { OnUILoaded(r.Result); };
-        }
-    }
-
+    
     public async UniTask ShowUIAsync(string uiName, params object[] allParams)
     {
         Jyx2_UIBase uibase;

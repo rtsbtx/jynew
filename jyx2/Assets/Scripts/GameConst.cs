@@ -55,10 +55,9 @@ public class ColorStringDefine
 public class GameConst
 {
     public const string DefaultMainMenuScene = "0_MainMenu";
-
-    public const float MapSpeed = 5;
-    public const float MapAngularSpeed = 1000;
-    public const float MapAcceleration = 100;
+    
+    public const float MapAngularSpeed = 9999;
+    public const float MapAcceleration = 9999;
 
     public const bool SEMI_REAL = false;//游戏是否是半即时制
     public const int ACTION_SP = 1000;//半即时制的情况下 行动一次的花费
@@ -190,16 +189,16 @@ public class GameConst
         ["10"] = new PropertyItem(10, "Yujian", "剑术".GetContent(nameof(GameConst)), 30, 20),
         ["11"] = new PropertyItem(11, "Shuadao", "刀术".GetContent(nameof(GameConst)), 30, 20),
         ["12"] = new PropertyItem(12, "Anqi", "暗器".GetContent(nameof(GameConst)), 30, 20),
-        ["13"] = new PropertyItem(20, "Qimen", "特殊".GetContent(nameof(GameConst)), 30, 20),
         //-------以上自动生成
         
-        ["14"] = new PropertyItem(13, "Hp", "生命".GetContent(nameof(GameConst)), 30, 20),
-        ["15"] = new PropertyItem(14, "Tili", "体力".GetContent(nameof(GameConst)), 30, 20),
-        ["16"] = new PropertyItem(15, "Mp", "内力".GetContent(nameof(GameConst)), 40, 30),
-        ["17"] = new PropertyItem(16, "MaxHp", "最大生命".GetContent(nameof(GameConst)), 50, 30),
-        ["18"] = new PropertyItem(17, "MaxMp", "最大内力".GetContent(nameof(GameConst)), 40, 30),
-        ["19"] = new PropertyItem(18, "Attack", "攻击力".GetContent(nameof(GameConst)), 30, 20),
-        ["20"] = new PropertyItem(19, "AntiPoison", "抗毒".GetContent(nameof(GameConst)), 30, 20),
+        ["13"] = new PropertyItem(13, "Hp", "生命".GetContent(nameof(GameConst)), 30, 20),
+        ["14"] = new PropertyItem(14, "Tili", "体力".GetContent(nameof(GameConst)), 30, 20),
+        ["15"] = new PropertyItem(15, "Mp", "内力".GetContent(nameof(GameConst)), 40, 30),
+        ["16"] = new PropertyItem(16, "MaxHp", "最大生命".GetContent(nameof(GameConst)), 50, 30),
+        ["17"] = new PropertyItem(17, "MaxMp", "最大内力".GetContent(nameof(GameConst)), 40, 30),
+        ["18"] = new PropertyItem(18, "Attack", "攻击力".GetContent(nameof(GameConst)), 30, 20),
+        ["19"] = new PropertyItem(19, "AntiPoison", "抗毒".GetContent(nameof(GameConst)), 30, 20),
+        ["20"] = new PropertyItem(20, "Qimen", "特殊".GetContent(nameof(GameConst)), 30, 20),
         ["21"] = new PropertyItem(21, "Wuxuechangshi", "武学常识".GetContent(nameof(GameConst)), 30, 20),
         ["22"] = new PropertyItem(22, "Pinde", "品德".GetContent(nameof(GameConst)), 30, 20),
         ["23"] = new PropertyItem(23, "AttackPoison", "功夫带毒".GetContent(nameof(GameConst)), 30, 20),
@@ -236,4 +235,6 @@ public class GameConst
     public const string PLAYER_PREF_FULLSCREEN = "fullscreen";
     public const string PLAYER_PREF_VIEWPORT_TYPE = "viewport_type";
     public const string PLAYER_PREF_LANGUAGE = "language";
+    public const string PLAYER_PREF_DEBUGMODE = "debugmode";
+    public const string PLAYER_MOBILE_MOVE_MODE = "mobile_move_mode";
 }

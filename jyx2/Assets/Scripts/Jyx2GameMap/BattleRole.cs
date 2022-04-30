@@ -115,6 +115,7 @@ public class BattleRole : Jyx2AnimationBattleRole
     /// <returns>物体身上的Animator组件</returns>
     public override Animator GetAnimator()
     {
+        _animator.applyRootMotion = false; //不接受动作变化位置
         return _animator;
         
         if (_animator == null && transform.childCount == 0)
@@ -229,18 +230,19 @@ public class BattleRole : Jyx2AnimationBattleRole
         if (StoryEngine.Instance == null) return;
 
         var hudRoot = StoryEngine.Instance.HUDRoot;
-        HUDTextInfo info = new HUDTextInfo(transform, $"{mainText}")
+        HUDTextInfo info = new HUDTextInfo(transform, mainText)
         {
             Color = textColor,
             Speed = Random.Range(0.2f, 1),
             VerticalAceleration = Random.Range(-2, 2f),
-            VerticalPositionOffset = Random.Range(0, 0.8f),
+            VerticalPositionOffset = Random.Range(0, 1.2f),
             VerticalFactorScale = Random.Range(1.2f, 10),
             Side = (Random.Range(0, 2) == 1) ? bl_Guidance.LeftDown : bl_Guidance.RightDown,
             ExtraDelayTime = 0.2f,
             AnimationType = bl_HUDText.TextAnimationType.HorizontalSmall,
             FadeSpeed = 200,
-            ExtraFloatSpeed = -11
+            ExtraFloatSpeed = -11,
+            Size = 30,
         };
         info.TextPrefab = Jyx2ResourceHelper.GetCachedPrefab("AttackInfoText");
         hudRoot.NewText(info);
@@ -401,14 +403,15 @@ public class BattleRole : Jyx2AnimationBattleRole
         if (this._animator == null) return;
 
         //人型骨骼，播放死亡动作
+        var clip = Jyx2.Middleware.Tools.GetRandomElement(globalConfig.defaultDieClips);
         if (this._animator.runtimeAnimatorController == globalConfig.defaultAnimatorController)
         {
-            var clip = Jyx2.Middleware.Tools.GetRandomElement(globalConfig.defaultDieClips);
             PlayAnimation(clip, () => { Destroy(gameObject); });
         }
         else
         {
-            Destroy(gameObject);  
+            //非人型等待动画完成后再隐藏，解决鳄鱼等角色死亡后血槽不消失问题 by Tomato
+            GameUtil.CallWithDelay(clip.length, () => { gameObject.SetActive(false); });
         }
         
         m_Health = MapRoleHealth.Death;

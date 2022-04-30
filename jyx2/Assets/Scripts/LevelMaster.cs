@@ -58,7 +58,7 @@ public class LevelMaster : MonoBehaviour
 	public ETCTouchPad m_TouchPad;
 	public ETCJoystick m_Joystick;
 
-	private Jyx2Player _player;
+	private Jyx2Player _gameMapPlayer;
 	
 	NavMeshAgent _playerNavAgent;
 	GameObject _navPointer;
@@ -177,14 +177,14 @@ public class LevelMaster : MonoBehaviour
 
 		//尝试绑定主角
 		TryBindPlayer().Forget();
-
+		
 		//大地图不能使用跟随相机（目前好像比较卡？）
-		if (gameMap != null && !gameMap.IsWorldMap())
+		if (gameMap != null && !gameMap.IsWorldMap() && _gameMapPlayer != null)
 		{
 			//初始化跟随相机
-			GameViewPortManager.Instance.InitForLevel(_player.transform);
+			GameViewPortManager.Instance.InitForLevel(_gameMapPlayer.transform);
 		}
-
+		
 		//刷新游戏事件
 		RefreshGameEvents();
 
@@ -213,18 +213,7 @@ public class LevelMaster : MonoBehaviour
 		if (gameMap != null && !gameMap.IsWorldMap())
 		{
 			//调整摄像机参数
-			var vcamObj = GameObject.Find("CameraGroup/CM vcam1");
-			if (vcamObj != null)
-			{
-				var vcam = vcamObj.GetComponent<CinemachineVirtualCamera>();
-				var body = vcam.GetCinemachineComponent<CinemachineTransposer>();
-				
-				//高度
-				body.m_FollowOffset = GlobalAssetConfig.Instance.defaultVcamOffset;
-				
-				//跟随对象
-				vcam.Follow = _player.transform;
-			}
+			UpdateCameraParams();
 
 			if (!IsInBattle)
 			{
@@ -236,6 +225,42 @@ public class LevelMaster : MonoBehaviour
 		interactiveButton = Jyx2InteractiveButton.GetInteractiveButton();
 
 		IsInited = true;
+		
+	}
+
+	public void UpdateCameraParams()
+	{
+		//世界地图取默认场景的设置
+		if (_currentMap.IsWorldMap())
+			return;
+		
+		//调整摄像机参数
+		var vcamObj = GameObject.Find("CameraGroup/CM vcam1");
+
+		if (vcamObj != null)
+		{
+			var vcam = vcamObj.GetComponent<CinemachineVirtualCamera>();
+			var body = vcam.GetCinemachineComponent<CinemachineTransposer>();
+
+			var viewPortType = GameViewPortManager.Instance.GetViewportType();
+
+			//高度
+			if (viewPortType == GameViewPortManager.ViewportType.Topdown)
+			{
+				body.m_FollowOffset = GlobalAssetConfig.Instance.defaultVcamOffset;	
+			}
+			else if(viewPortType == GameViewPortManager.ViewportType.TopdownClose)
+			{
+				body.m_FollowOffset = GlobalAssetConfig.Instance.vcamOffsetClose;
+			}
+
+
+			if (_gameMapPlayer != null)
+			{
+				//跟随对象
+				vcam.Follow = _gameMapPlayer.transform;	
+			}
+		}
 	}
 
 	private void PlayMusic(Jyx2ConfigMap gameMap)
@@ -267,21 +292,23 @@ public class LevelMaster : MonoBehaviour
 		AudioManager.PlayMusicAtPath(musicPath).Forget();
 	}
 
-	private void UpdateMobileControllerUI()
+	public void UpdateMobileControllerUI()
 	{
-		m_Joystick.gameObject.SetActive(IsMobilePlatform());
-		m_TouchPad.gameObject.SetActive(IsMobilePlatform());
-
-		//战斗中移动按钮隐藏
 		if (BattleManager.Instance.IsInBattle)
 		{
 			m_Joystick.gameObject.SetActive(false);
 		}
+		else
+		{
+			m_Joystick.gameObject.SetActive(IsJoystickControlEnable());
+		}
+		
+		m_TouchPad.gameObject.SetActive(BattleManager.Instance.IsInBattle && IsMobilePlatform()); //移动平台显示战斗旋转
 	}
 
 	void LoadSpawnPosition()
 	{
-		if (runtime == null || _player == null)
+		if (runtime == null || _gameMapPlayer == null)
 			return;
 
 		var map = GetCurrentGameMap();
@@ -337,27 +364,27 @@ public class LevelMaster : MonoBehaviour
 	{
 		_playerNavAgent.enabled = false;
 		Debug.Log("load pos = " + spawnPos);
-		_player.transform.position = spawnPos;
+		_gameMapPlayer.transform.position = spawnPos;
 		_playerNavAgent.enabled = true;
 	}
 	void PlayerSpawnRotate(Quaternion ori)
 	{
 		_playerNavAgent.enabled = false;
 		Debug.Log("load ori = " + ori);
-		_player.transform.rotation = ori;
+		_gameMapPlayer.transform.rotation = ori;
 		_playerNavAgent.enabled = true;
 	}
 
 
 	private void SetPlayerSpeed(float speed)
 	{
-		if (_player == null)
+		if (_gameMapPlayer == null)
 			return;
 
-		var animator = _player.m_Animator;
+		var animator = _gameMapPlayer.m_Animator;
 		if (animator != null)
 		{
-			animator.SetFloat("speed", speed);
+			animator.SetFloat("speed", Math.Min(speed, 20));
 		}
 	}
 
@@ -369,16 +396,17 @@ public class LevelMaster : MonoBehaviour
 		var gameMap = GetCurrentGameMap();
 		if (gameMap != null && gameMap.IsWorldMap())
 		{
-			_playerNavAgent.speed = GameConst.MapSpeed * 4; //大地图上放大4倍
+			_playerNavAgent.speed = GlobalAssetConfig.Instance.playerMoveSpeedWorldMap;
 		}
 		else
 		{
-			_playerNavAgent.speed = GameConst.MapSpeed;
+			_playerNavAgent.speed = GlobalAssetConfig.Instance.playerMoveSpeed;
 		}
 
 		_playerNavAgent.angularSpeed = GameConst.MapAngularSpeed;
 		_playerNavAgent.acceleration = GameConst.MapAcceleration;
 		_playerNavAgent.autoBraking = false;
+		_playerNavAgent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
 
 
 		playerRoleView.Init();
@@ -389,21 +417,21 @@ public class LevelMaster : MonoBehaviour
 	// modified by eaphone at 2021/05/31
 	public async UniTask TryBindPlayer()
 	{
-		if (_player != null)
+		if (_gameMapPlayer != null)
 			return;
 
-		_player = RoleHelper.FindPlayer();
+		_gameMapPlayer = RoleHelper.FindPlayer();
 
-		if (_player != null)
+		if (_gameMapPlayer != null)
 		{
 			//设置主角
-			await SetPlayer(_player);
+			await SetPlayer(_gameMapPlayer);
 
 			var gameMap = GetCurrentGameMap();
 			if (gameMap != null && gameMap.Tags.Contains("POINTLIGHT")) //点光源
 			{
 				var obj = Jyx2ResourceHelper.CreatePrefabInstance(ConStr.PlayerPointLight);
-				obj.transform.SetParent(_player.transform);
+				obj.transform.SetParent(_gameMapPlayer.transform);
 				obj.transform.localPosition = Vector3.zero;
 				obj.transform.localScale = Vector3.one;
 			}
@@ -417,13 +445,15 @@ public class LevelMaster : MonoBehaviour
 		GameObject.Find("LevelMaster/UI/PlayerStatusPanel").SetActive(!isOn);
 	}
 
-	void FixedUpdate()
+	void Update()
 	{
 		TryClearNavPointer();
-		PlayerControll();
+		PlayerControl();
+
+		GamePadUpdate();
 	}
 
-	void PlayerControll()
+	void PlayerControl()
 	{
 		if (BattleManager.Instance.IsInBattle)
 			return;
@@ -435,10 +465,10 @@ public class LevelMaster : MonoBehaviour
 			return;
 		}
 
-		if (_player == null)
+		if (_gameMapPlayer == null)
 			return;
-
-		if (GameViewPortManager.Instance.GetViewportType() == GameViewPortManager.ViewportType.Topdown || IsInWorldMap)
+		
+		if (GameViewPortManager.Instance.GetViewportType() != GameViewPortManager.ViewportType.Follow || IsInWorldMap)
 		{
 			//鼠标点击控制
 			OnClickControlPlayer();
@@ -516,15 +546,15 @@ public class LevelMaster : MonoBehaviour
 			return;
 
 		//在editor上可以寻路
-		if (!Application.isMobilePlatform || _currentMap.IsWorldMap())
+		if (IsClickControlEnable())
 		{
 			//点击寻路
-			if (Input.GetMouseButton(1) && !UnityTools.IsPointerOverUIObject())
+			if ((Input.GetMouseButton(0) || Input.GetMouseButton(1)) && !UnityTools.IsPointerOverUIObject())
 			{
 				Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
 				//NPC层
-				if (Physics.Raycast(ray, out RaycastHit hitInfo, 100, 1 << LayerMask.NameToLayer("NPC")))
+				if (Physics.Raycast(ray, out RaycastHit hitInfo, 500, 1 << LayerMask.NameToLayer("NPC")))
 				{
 					var dist = Vector3.Distance(runtime.Player.View.transform.position, hitInfo.transform.position);
 					Debug.Log("on npc clicked, dist = " + dist);
@@ -532,7 +562,7 @@ public class LevelMaster : MonoBehaviour
 					//现在没有直接地图上点击NPC的实现
 				}
 				//BY CG: MASK：15:Ground层
-				else if (Physics.Raycast(ray, out hitInfo, 100, 1 << LayerMask.NameToLayer("Ground")))
+				else if (Physics.Raycast(ray, out hitInfo, 500, 1 << LayerMask.NameToLayer("Ground")))
 				{
 					_playerNavAgent.isStopped = false;
 					_playerNavAgent.updateRotation = true;
@@ -542,6 +572,40 @@ public class LevelMaster : MonoBehaviour
 				}
 			}
 		}
+	}
+
+	/// <summary>
+	/// 是否可以点击移动
+	/// </summary>
+	/// <returns></returns>
+	private bool IsClickControlEnable()
+	{
+		if (!IsMobilePlatform()) return true;
+		if (IsMobileClickControl()) return true;
+		return false;
+	}
+
+	/// <summary>
+	/// 是否可以虚拟摇杆移动
+	/// </summary>
+	/// <returns></returns>
+	private bool IsJoystickControlEnable()
+	{
+		return IsMobilePlatform() && !IsMobileClickControl();
+	}
+
+	/// <summary>
+	/// 是否可以标准输入移动
+	/// </summary>
+	/// <returns></returns>
+	private bool IsAxisControlEnable()
+	{
+		return true;
+	}
+
+	private bool IsMobileClickControl()
+	{
+		return IsMobilePlatform() && GameSettingManager.MobileMoveMode == GameSettingManager.MobileMoveModeType.Click;
 	}
 
 	public void ForceSetEnable(bool forceDisable)
@@ -555,12 +619,12 @@ public class LevelMaster : MonoBehaviour
 	{
 		if (!_CanController || _forceDisable)//掉本调用自动寻路的时候 不能手动控制
 			return;
-
-		if (Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0)
+		
+		if (IsAxisControlEnable() && (Input.GetAxis("Horizontal") != 0 || Input.GetAxis("Vertical") != 0))
 		{
 			OnManuelMove(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
 		}
-		else if (m_Joystick.axisX.axisValue != 0 || m_Joystick.axisY.axisValue != 0)
+		else if (IsJoystickControlEnable() && (m_Joystick.axisX.axisValue != 0 || m_Joystick.axisY.axisValue != 0))
 		{
 			OnManuelMove(-m_Joystick.axisX.axisValue, m_Joystick.axisY.axisValue);
 		}
@@ -603,18 +667,18 @@ public class LevelMaster : MonoBehaviour
 
 		if (Input.GetKey(KeyCode.Q))
 		{
-			_player.transform.RotateAround(_player.transform.position, Vector3.up, -5);
+			_gameMapPlayer.transform.RotateAround(_gameMapPlayer.transform.position, Vector3.up, -5);
 		}
 
 		if (Input.GetKey(KeyCode.E))
 		{
-			_player.transform.RotateAround(_player.transform.position, Vector3.up, 5);
+			_gameMapPlayer.transform.RotateAround(_gameMapPlayer.transform.position, Vector3.up, 5);
 		}
 
 		//鼠标滑屏
 		if ((Input.GetMouseButton(0) || Input.GetMouseButton(1)) && !UnityTools.IsPointerOverUIObject())
 		{
-			_player.transform.RotateAround(_player.transform.position, Vector3.up, 15 * Input.GetAxis("Mouse X"));
+			_gameMapPlayer.transform.RotateAround(_gameMapPlayer.transform.position, Vector3.up, 15 * Input.GetAxis("Mouse X"));
 		}
 
 		//鼠标滚轮
@@ -643,12 +707,12 @@ public class LevelMaster : MonoBehaviour
 		right.y = 0;
 		right.Normalize();
 
-		var dest = _player.transform.position + right * h + forward * v;
+		var dest = _gameMapPlayer.transform.position + right * h + forward * v;
 		if (_tempDestH == Vector3.zero) _tempDestH = right * h;
 		if (_tempDestV == Vector3.zero) _tempDestV = forward * v;
 		if (m_IsLockingDirection)
 		{
-			dest = _player.transform.position + _tempDestH + _tempDestV;
+			dest = _gameMapPlayer.transform.position + _tempDestH + _tempDestV;
 			Vector3 cur_dir = new Vector3(h, v, 0).normalized;
 			Vector3 old_dir = new Vector3(_tempH, _tempV, 0).normalized;
 			if (Vector3.Angle(cur_dir, old_dir) > unlockDegee)
@@ -666,14 +730,14 @@ public class LevelMaster : MonoBehaviour
 			//Debug.Log("UnLockingDirection");
 		}
 
-		var sourcePos = _player.transform.position;
+		var sourcePos = _gameMapPlayer.transform.position;
 		var maxSpeed = _playerNavAgent.speed;
 
 		//设置位移
-		_player.transform.position = Vector3.Lerp(_player.transform.position, dest, Time.fixedDeltaTime * maxSpeed);
+		_gameMapPlayer.transform.position = Vector3.Lerp(_gameMapPlayer.transform.position, dest, Time.deltaTime * maxSpeed);
 
 		//计算当前速度
-		var speed = (_player.transform.position - sourcePos).magnitude / Time.fixedDeltaTime;
+		var speed = (_gameMapPlayer.transform.position - sourcePos).magnitude / Time.deltaTime;
 		SetPlayerSpeed(speed);
 
 		if (_playerNavAgent == null || !_playerNavAgent.enabled || !_playerNavAgent.isOnNavMesh) return;
@@ -701,12 +765,12 @@ public class LevelMaster : MonoBehaviour
 		right.y = 0;
 		right.Normalize();
 
-		var dest = _player.transform.position + right * h + forward * v;
+		var dest = _gameMapPlayer.transform.position + right * h + forward * v;
 		if (_tempDestH == Vector3.zero) _tempDestH = right * h;
 		if (_tempDestV == Vector3.zero) _tempDestV = forward * v;
 		if (m_IsLockingDirection)
 		{
-			dest = _player.transform.position + _tempDestH + _tempDestV;
+			dest = _gameMapPlayer.transform.position + _tempDestH + _tempDestV;
 			Vector3 cur_dir = new Vector3(h, v, 0).normalized;
 			Vector3 old_dir = new Vector3(_tempH, _tempV, 0).normalized;
 			if (Vector3.Angle(cur_dir, old_dir) > unlockDegee)
@@ -723,15 +787,15 @@ public class LevelMaster : MonoBehaviour
 			_tempV = v;
 			//Debug.Log("UnLockingDirection");
 		}
-		_player.transform.LookAt(new Vector3(dest.x, _player.transform.position.y, dest.z));
-		var sourcePos = _player.transform.position;
+		_gameMapPlayer.transform.LookAt(new Vector3(dest.x, _gameMapPlayer.transform.position.y, dest.z));
+		var sourcePos = _gameMapPlayer.transform.position;
 		var maxSpeed = _playerNavAgent.speed;
 
 		//设置位移
-		_player.transform.position = Vector3.Lerp(_player.transform.position, dest, Time.fixedDeltaTime * maxSpeed);
+		_gameMapPlayer.transform.position = Vector3.Lerp(_gameMapPlayer.transform.position, dest, Time.deltaTime * maxSpeed);
 
 		//计算当前速度
-		var speed = (_player.transform.position - sourcePos).magnitude / Time.fixedDeltaTime;
+		var speed = (_gameMapPlayer.transform.position - sourcePos).magnitude / Time.deltaTime;
 		SetPlayerSpeed(speed);
 
 		if (_playerNavAgent == null || !_playerNavAgent.enabled || !_playerNavAgent.isOnNavMesh) return;
@@ -806,7 +870,7 @@ public class LevelMaster : MonoBehaviour
 				//增加传送时设置朝向。rotation为0时不作调整，需要朝向0时候，可以使用360.
 				if (trans.rotation != Quaternion.identity)
 				{
-					_player.transform.rotation = trans.rotation;
+					_gameMapPlayer.transform.rotation = trans.rotation;
 				}
 			}
 			else
@@ -825,7 +889,7 @@ public class LevelMaster : MonoBehaviour
 	public void Transport(Vector3 position)
 	{
 		_playerNavAgent.Warp(position);
-		_player.transform.position = position;
+		_gameMapPlayer.transform.position = position;
 	}
 
 	// implement change player facing. 0:top-right, 1:down-right, 2:top-left, 3:down-left
@@ -833,7 +897,7 @@ public class LevelMaster : MonoBehaviour
 	public void SetRotation(int ro)
 	{
 		int[] roationSet = { -90, 0, 180, 90 };
-		_player.transform.rotation = Quaternion.Euler(Vector3.up * roationSet[ro]);
+		_gameMapPlayer.transform.rotation = Quaternion.Euler(Vector3.up * roationSet[ro]);
 	}
 
 	//手动存档
@@ -852,8 +916,8 @@ public class LevelMaster : MonoBehaviour
 		}
 
 		runtime.SubMapData = new SubMapSaveData(GetCurrentGameMap().Id);
-		runtime.SubMapData.CurrentPos = _player.transform.position;
-		runtime.SubMapData.CurrentOri = _player.transform.rotation;
+		runtime.SubMapData.CurrentPos = _gameMapPlayer.transform.position;
+		runtime.SubMapData.CurrentOri = _gameMapPlayer.transform.rotation;
 
 
 		runtime.GameSave(index);
@@ -862,16 +926,16 @@ public class LevelMaster : MonoBehaviour
 
 	public Vector3 GetPlayerPosition()
 	{
-		return _player.transform.position;
+		return _gameMapPlayer.transform.position;
 	}
 	public Quaternion GetPlayerOrientation()
 	{
-		return _player.transform.rotation;
+		return _gameMapPlayer.transform.rotation;
 	}
 	
 	public Jyx2Player GetPlayer()
 	{
-		return _player;
+		return _gameMapPlayer;
 	}
 
 	//刷新本场景内的所有事件
@@ -910,7 +974,7 @@ public class LevelMaster : MonoBehaviour
 		}
 	}
 
-	private void Update()
+	private void GamePadUpdate()
 	{
 		Button button = Jyx2InteractiveButton.GetInteractiveButton();
 

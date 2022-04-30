@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Cysharp.Threading.Tasks;
 using Jyx2.Middleware;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -16,7 +17,7 @@ namespace Jyx2.MOD
         public static readonly string Http = "http://42.192.48.70:3001/getPassMods";
         public static string ModsPath { get; private set; }
 
-        public static void Init()
+        public static async UniTask Init()
         {
             ModsPath = Path.Combine(Application.persistentDataPath, "mods");;
             if (!Directory.Exists(ModsPath))
@@ -28,15 +29,16 @@ namespace Jyx2.MOD
             if (Directory.Exists(ModsPath))
             {
                 UnityWebRequest request = UnityWebRequest.Get(Http);
-                request.SendWebRequest();
-                while (!request.isDone) { }
-                string textString = request.downloadHandler.text;
-                var response = new Response(textString);
-                var modMetas = response.data;
-                foreach (var modMeta in modMetas)
+                try
                 {
-                    var filePath = Path.Combine(ModsPath, modMeta.id);
-                    var modEntry = new ModEntry(modMeta, filePath);
+                    await request.SendWebRequest();
+                    string textString = request.downloadHandler.text;
+                    var response = new Response(textString);
+                    var modMetas = response.data;
+                    foreach (var modMeta in modMetas)
+                    {
+                        var filePath = Path.Combine(ModsPath, modMeta.id);
+                        var modEntry = new ModEntry(modMeta, filePath);
 #if UNITY_ANDROID
                     if (modMeta.platform == "Android")
                     {
@@ -44,10 +46,10 @@ namespace Jyx2.MOD
                     }
 #endif
 #if UNITY_STANDALONE_WIN
-                    if (modMeta.platform == "Windows")
-                    {
-                        ModEntries.Add(modEntry);
-                    }
+                        if (modMeta.platform == "Windows")
+                        {
+                            ModEntries.Add(modEntry);
+                        }
 #endif
 #if UNITY_STANDALONE_OSX
                     if (modMeta.platform == "MacOS")
@@ -55,17 +57,22 @@ namespace Jyx2.MOD
                         ModEntries.Add(modEntry);
                     }
 #endif
-                }
+                    }
                 
-                var pathList = new List<string>();
-                FileTools.GetAllFilePath(ModsPath, pathList, new List<string>() { ".json" });
-                foreach (var jsonPath in pathList)
+                    var pathList = new List<string>();
+                    FileTools.GetAllFilePath(ModsPath, pathList, new List<string>() { ".json" });
+                    foreach (var jsonPath in pathList)
+                    {
+                        var jsonString = File.ReadAllText(jsonPath, Encoding.UTF8);
+                        var modMeta = new ModMeta(jsonString);
+                        var filePath = Path.Combine(ModsPath, modMeta.id);
+                        var modEntry = new ModEntry(modMeta, filePath);
+                        ModEntries.Add(modEntry);
+                    }
+                }
+                catch (Exception e)
                 {
-                    var jsonString = File.ReadAllText(jsonPath, Encoding.UTF8);
-                    var modMeta = new ModMeta(jsonString);
-                    var filePath = Path.Combine(ModsPath, modMeta.id);
-                    var modEntry = new ModEntry(modMeta, filePath);
-                    ModEntries.Add(modEntry);
+                    Debug.LogError(e);
                 }
             }
         }
@@ -190,7 +197,21 @@ namespace Jyx2.MOD
                 }
             }
 
-            public bool Active { get; set; }
+            private bool _active;
+            
+            public bool Active
+            {
+                get
+                {
+                    return PlayerPrefs.GetInt(ModMeta.name) == 1 || _active;
+                }
+                set
+                {
+                    PlayerPrefs.SetInt(ModMeta.name, value ? 1 : 0);
+                    PlayerPrefs.Save();
+                    _active = value;
+                }
+            }
         }
     }
 
