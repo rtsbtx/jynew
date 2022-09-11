@@ -1,6 +1,10 @@
 using System.Collections.Generic;
+using System.IO;
+using Jyx2.Middleware;
 using Jyx2.MOD;
+using Jyx2Configs;
 using Sirenix.OdinInspector;
+using UnityEditor;
 using UnityEngine;
 
 
@@ -21,15 +25,23 @@ public class MODRootConfig : ScriptableObject
 
     [LabelText("LUA文件名配置")] public string LuaFilePatten = "ka{0}";
 
+    [LabelText("主角姓名")] public string PlayerName;
     
     [InfoBox("某些角色名与人物ID不严格对应，在此修正。用于对话中正确显示名字")] [BoxGroup("对话人物ID修正")] [TableList] 
     [HideLabel]
     public List<StoryIdNameFix> StoryIdNameFixes;
 
-
-    [Button("生成索引")]
-    void GenerateIndexFile()
+#if UNITY_EDITOR
+    [Button("生成配置表")]
+    public void GenerateConfigs()
     {
-        MODLoader.WriteModIndexFile(ModRootDir);
+        string dataPath = Path.Combine(ModRootDir, "Configs", "Datas.bytes");
+        if (File.Exists(dataPath))
+        {
+            File.Delete(dataPath);
+        }
+        ExcelTools.GenerateConfigsFromExcel<Jyx2ConfigBase>($"{ModRootDir}/Configs");
+        AssetDatabase.Refresh();
     }
+#endif
 }

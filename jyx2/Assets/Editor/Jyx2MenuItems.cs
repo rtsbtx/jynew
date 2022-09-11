@@ -7,8 +7,7 @@ using DG.DemiLib;
 using Jyx2.MOD;
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.AddressableAssets;
-using UnityEditor.AddressableAssets.Settings;
+
 #if UNITY_STANDALONE_OSX
 using UnityEditor.OSXStandalone;
 #endif
@@ -18,6 +17,7 @@ namespace Jyx2Editor
 {
     public class Jyx2MenuItems
     {
+        
         [MenuItem("项目快速导航/技能编辑器")]
         private static void OpenSkillEditor()
         {
@@ -75,7 +75,7 @@ namespace Jyx2Editor
         [MenuItem("项目快速导航/资源/道具图标")]
         private static void OpenItemsMenu()
         {
-            NavigateToPath("Assets/BuildSource/Jyx2Items/0.png");
+            NavigateToPath("Assets/BuildSource/Items/0.png");
         }
 
         [MenuItem("项目快速导航/资源/音乐")]
@@ -105,14 +105,12 @@ namespace Jyx2Editor
 
             //BUILD
             string path = EditorUtility.SaveFolderPanel("选择打包输出目录", "", "jyx2Win64Build");
+            
+            //生成ab包
+            BuildPipeline.BuildAssetBundles("Assets/StreamingAssets", BuildAssetBundleOptions.ChunkBasedCompression, BuildTarget.StandaloneWindows);
+
 
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.StandaloneWindows64);
-
-            //重新生成MOD资源索引表
-            WriteCurrentModIndexFile();
-
-            //重新生成Addressable相关文件
-            AddressableAssetSettings.BuildPlayerContent();
 
             string currentDate = DateTime.Now.ToString("yyyyMMdd");
 
@@ -133,20 +131,18 @@ namespace Jyx2Editor
         {
             //自动运行xLua的编译
             Generator.GenAll();
+
             //BUILD
             string path = EditorUtility.SaveFolderPanel("选择打包输出目录", "", "jyx2Win64Build");
+            
+            //生成ab包
+            BuildPipeline.BuildAssetBundles("Assets/StreamingAssets", BuildAssetBundleOptions.ChunkBasedCompression, BuildTarget.StandaloneWindows);
 
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.StandaloneWindows64);
 
             if (string.IsNullOrEmpty(path))
                 return;
-
-            //重新生成MOD资源索引表
-            WriteCurrentModIndexFile();
-
-            //重新生成Addressable相关文件
-            AddressableAssetSettings.BuildPlayerContent();
-
+            
             string currentDate = DateTime.Now.ToString("yyyyMMdd");
 
             //设置版本号
@@ -175,6 +171,10 @@ namespace Jyx2Editor
 
             //BUILD
             string path = EditorUtility.SaveFolderPanel("选择打包输出目录", "", "");
+            
+            //生成ab包
+            BuildPipeline.BuildAssetBundles("Assets/StreamingAssets", BuildAssetBundleOptions.ChunkBasedCompression, BuildTarget.Android);
+
 
             try
             {
@@ -182,12 +182,7 @@ namespace Jyx2Editor
 
                 if (string.IsNullOrEmpty(path))
                     return;
-
-                //重新生成MOD资源索引表
-                WriteCurrentModIndexFile();
-
-                //重新生成Addressable相关文件
-                AddressableAssetSettings.BuildPlayerContent();
+                
 
                 string currentDate = DateTime.Now.ToString("yyyyMMdd");
                 string apkPath = path + $"/jyx2AndroidBuild-{currentDate}.apk";
@@ -219,9 +214,14 @@ namespace Jyx2Editor
         {
             //自动运行xLua的编译
             Generator.GenAll();
+            
 
             //BUILD
             string path = EditorUtility.SaveFolderPanel("选择打包输出目录", "", "");
+            
+            //生成ab包
+            BuildPipeline.BuildAssetBundles("Assets/StreamingAssets", BuildAssetBundleOptions.ChunkBasedCompression, BuildTarget.Android);
+
 
             try
             {
@@ -229,12 +229,6 @@ namespace Jyx2Editor
 
                 if (string.IsNullOrEmpty(path))
                     return;
-
-                //重新生成MOD资源索引表
-                WriteCurrentModIndexFile();
-
-                //重新生成Addressable相关文件
-                AddressableAssetSettings.BuildPlayerContent();
 
                 string currentDate = DateTime.Now.ToString("yyyyMMdd");
                 string apkPath = path + $"/jyx2AndroidBuild-{currentDate}.apk";
@@ -268,6 +262,10 @@ namespace Jyx2Editor
 
             //BUILD
             string path = EditorUtility.SaveFolderPanel("选择打包输出目录", "", "");
+            
+            //生成ab包
+            BuildPipeline.BuildAssetBundles("Assets/StreamingAssets", BuildAssetBundleOptions.ChunkBasedCompression, BuildTarget.StandaloneOSX);
+
 
             try
             {
@@ -280,13 +278,6 @@ namespace Jyx2Editor
 
                 if (string.IsNullOrEmpty(path))
                     return;
-
-
-                //重新生成MOD资源索引表
-                WriteCurrentModIndexFile();
-
-                //重新生成Addressable相关文件
-                AddressableAssetSettings.BuildPlayerContent();
 
                 string currentDate = DateTime.Now.ToString("yyyyMMdd");
                 string outputPath = path + $"/jyxOSXBuild-{currentDate}.app";
@@ -317,6 +308,9 @@ namespace Jyx2Editor
 
             //BUILD
             string path = EditorUtility.SaveFolderPanel("选择打包输出目录", "", "");
+            
+            //生成ab包
+            BuildPipeline.BuildAssetBundles("Assets/StreamingAssets", BuildAssetBundleOptions.ChunkBasedCompression, BuildTarget.StandaloneOSX);
 
             try
             {
@@ -329,12 +323,6 @@ namespace Jyx2Editor
 
                 if (string.IsNullOrEmpty(path))
                     return;
-
-                //重新生成MOD资源索引表
-                WriteCurrentModIndexFile();
-
-                //重新生成Addressable相关文件
-                AddressableAssetSettings.BuildPlayerContent();
 
                 string currentDate = DateTime.Now.ToString("yyyyMMdd");
                 string outputPath = path + $"/jyxOSXBuild-{currentDate}.app";
@@ -366,6 +354,9 @@ namespace Jyx2Editor
 
             //BUILD
             string path = EditorUtility.SaveFolderPanel("选择打包输出目录", "", "");
+            
+            //生成ab包
+            BuildPipeline.BuildAssetBundles("Assets/StreamingAssets", BuildAssetBundleOptions.ChunkBasedCompression, BuildTarget.iOS);
 
             try
             {
@@ -373,13 +364,7 @@ namespace Jyx2Editor
 
                 if (string.IsNullOrEmpty(path))
                     return;
-
-
-                //重新生成MOD资源索引表
-                WriteCurrentModIndexFile();
-
-                //重新生成Addressable相关文件
-                AddressableAssetSettings.BuildPlayerContent();
+                
 
                 string currentDate = DateTime.Now.ToString("yyyyMMdd");
                 string outputPath = path + $"/jyxiOSBuild-{currentDate}";
@@ -409,6 +394,9 @@ namespace Jyx2Editor
 
             //BUILD
             string path = EditorUtility.SaveFolderPanel("选择打包输出目录", "", "");
+            
+            //生成ab包
+            BuildPipeline.BuildAssetBundles("Assets/StreamingAssets", BuildAssetBundleOptions.ChunkBasedCompression, BuildTarget.iOS);
 
             try
             {
@@ -416,13 +404,7 @@ namespace Jyx2Editor
 
                 if (string.IsNullOrEmpty(path))
                     return;
-
-
-                //重新生成MOD资源索引表
-                WriteCurrentModIndexFile();
-
-                //重新生成Addressable相关文件
-                AddressableAssetSettings.BuildPlayerContent();
+                
 
                 string currentDate = DateTime.Now.ToString("yyyyMMdd");
                 string outputPath = path + $"/jyxiOSBuild-{currentDate}";
@@ -442,14 +424,6 @@ namespace Jyx2Editor
                 EditorUtility.DisplayDialog("打包出错", e.ToString(), "确定");
                 Debug.LogError(e.StackTrace);
             }
-        }
-
-        private static void WriteCurrentModIndexFile()
-        {
-            var globalSettings = AssetDatabase.LoadAssetAtPath<GlobalAssetConfig>("Assets/GlobalAssetConfig.asset");
-            MODLoader.WriteModIndexFile(globalSettings.startMod.ModRootDir);
-
-            AssetDatabase.Refresh();
         }
     }
 }

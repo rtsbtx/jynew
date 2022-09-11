@@ -25,7 +25,7 @@ public partial class BagUIPanel : Jyx2_UIBase
 	public override UILayer Layer => UILayer.NormalUI;
 
 	Action<int> m_callback;
-	Dictionary<string, int> m_itemsData;
+	Dictionary<string, (int, int)> m_itemsData;
 	Jyx2ItemUI m_selectItem;
 	Func<Jyx2ConfigItem, bool> m_filter = null;
 	private bool castFromSelectPanel = false;
@@ -65,7 +65,7 @@ public partial class BagUIPanel : Jyx2_UIBase
 	protected override void OnShowPanel(params object[] allParams)
 	{
 		base.OnShowPanel(allParams);
-		m_itemsData = (Dictionary<string, int>)allParams[0];
+		m_itemsData = (Dictionary<string, (int, int)>)allParams[0];
 		if (allParams.Length > 1)
 			m_callback = (Action<int>)allParams[1];
 		if (allParams.Length > 2)
@@ -116,10 +116,13 @@ public partial class BagUIPanel : Jyx2_UIBase
 
 		float itemHeight = 0;
 
-		foreach (var kv in m_itemsData)
+		var dicSort = m_itemsData.OrderBy(itemPair => itemPair.Value.Item2); //Item2 为获取道具的时间戳
+
+		foreach (var kv in dicSort)
 		{
+			
 			string id = kv.Key;
-			int count = kv.Value;
+			int count = kv.Value.Item1;
 
 			var item = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(id);
 			if (item == null)
@@ -276,13 +279,13 @@ public partial class BagUIPanel : Jyx2_UIBase
 	{
 		foreach (var btn in m_Filters)
 		{
-			btn.GetComponent<Image>().color = Color.white;
+			btn.image.color = Color.white;
 		}
 
 		int index = (int)_filter;
 
 		//高亮的边框颜色等于文字颜色
-		m_Filters[index].GetComponent<Image>().color = m_Filters[index].GetComponentInChildren<Text>().color;
+		m_Filters[index].image.color = m_Filters[index].GetComponentInChildren<Text>().color;
 	}
 
 	#region 手柄支持代码

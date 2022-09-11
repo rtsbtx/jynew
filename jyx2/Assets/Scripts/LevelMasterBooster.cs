@@ -14,6 +14,7 @@ using Cysharp.Threading.Tasks;
 using Jyx2;
 using Jyx2.Middleware;
 using Jyx2.MOD;
+using Jyx2.ResourceManagement;
 using Jyx2Configs;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -21,26 +22,15 @@ using Sirenix.OdinInspector;
 
 public class LevelMasterBooster : MonoBehaviour
 {
-
     [LabelText("模拟移动端")] public bool m_MobileSimulate;
 
-    [InfoBox("不允许设置所属地图，因为当前是战斗地图", InfoMessageType.Error, "@this.m_GameMap != null && this.m_IsBattleMap")]
-    [LabelText("所属地图")]
-    [InfoBox("仅用于在本场景启动调试时参考使用")]
-    [HideIf("@this.m_IsBattleMap")]
-    public Jyx2ConfigMap m_GameMap;
-
     [LabelText("战斗地图")] public bool m_IsBattleMap = false;
-    
-    GameRuntimeData runtime { get { return GameRuntimeData.Instance; } }
+
+    private GameRuntimeData runtime => GameRuntimeData.Instance;
 
     private async void Awake()
     {
-#if UNITY_EDITOR
-        BeforeSceneLoad.ColdBind();
-#endif
-        
-        await BeforeSceneLoad.loadFinishTask;
+        await RuntimeEnvSetup.Setup();
 
         //实例化LevelMaster
         LevelMaster levelMaster = Jyx2ResourceHelper.CreatePrefabInstance(ConStr.LevelMaster).GetComponent<LevelMaster>();
@@ -49,15 +39,16 @@ public class LevelMasterBooster : MonoBehaviour
         levelMaster.transform.SetParent(transform, false);
         levelMaster.MobileSimulate = m_MobileSimulate;
 
-        if (LevelMaster.GetCurrentGameMap() == null && m_GameMap != null)
+        if (LevelMaster.GetCurrentGameMap() == null)
         {
-            LevelMaster.SetCurrentMap(m_GameMap);
+            var gameMap = Jyx2ConfigMap.GetMapBySceneName(SceneManager.GetActiveScene().name);
+            LevelMaster.SetCurrentMap(gameMap);
         }
     }
 
     private async void Start()
     {
-        await BeforeSceneLoad.loadFinishTask;
+        await RuntimeEnvSetup.Setup();
 
         if (GameRuntimeData.Instance == null)
         {
@@ -190,7 +181,7 @@ public class LevelMasterBooster : MonoBehaviour
                 try
                 {
                     animator.runtimeAnimatorController =
-                        await MODLoader.LoadAsset<RuntimeAnimatorController>(animationControllerPath);
+                        await ResLoader.LoadAsset<RuntimeAnimatorController>(animationControllerPath);
                 }
                 catch
                 {

@@ -53,7 +53,7 @@ public class BattleLoader : MonoBehaviour
     // Start is called before the first frame update
     async void Start()
     {
-        await BeforeSceneLoad.loadFinishTask;
+        await RuntimeEnvSetup.Setup();
 
         if (IsTestCase)
         {
@@ -100,21 +100,25 @@ public class BattleLoader : MonoBehaviour
         }
 
         m_Roles = new List<BattlePosRole>();
-        Jyx2ConfigBattle battle = Jyx2ConfigBattle.Get(id);
+        Jyx2ConfigBattle battle = GameConfigDatabase.Instance.Get<Jyx2ConfigBattle>(id);
         if (battle == null)
         {
             Debug.LogError("载入了未定义的战斗，id=" + id);
             return;
         }
-        
+
+        var teamMates = battle.TeamMates.Split(',').ToList();
+        var autoTeamMates = battle.AutoTeamMates.Split(',').ToList();
+
         AudioManager.PlayMusic(battle.Music);
 
         //设置了自动战斗人物
-        if (battle.AutoTeamMates.Count > 0)
+        // 自动队友不等于-1则表示有自己或队友
+        if (!autoTeamMates[0].Equals("-1"))
         {
-            foreach (var v in battle.AutoTeamMates)
+            foreach (var v in autoTeamMates)
             {
-                var roleId = v.Id;
+                var roleId = int.Parse(v);
                 if (roleId == -1) continue;
                 AddRole(roleId, 0); //TODO IS AUTO
                 for (var i = 0; i < m_Roles.Count; i++)
@@ -134,7 +138,7 @@ public class BattleLoader : MonoBehaviour
             //必选人物
             bool MustRoleFunc(RoleInstance r)
             {
-                return battle.TeamMates.Exists(t => t.Id == r.Key);
+                return teamMates.Exists(id => int.Parse(id) == r.Key);
             }
 
             SelectRoleParams selectPram = new SelectRoleParams();
@@ -160,6 +164,9 @@ public class BattleLoader : MonoBehaviour
 
     UniTask LoadJyx2BattleStep2(Jyx2ConfigBattle battle, List<RoleInstance> selectRoles, Action<BattleResult> callback)
     {
+        var teamMates = battle.TeamMates.Split(',').ToList();
+        var enemies = battle.Enemies.Split(',').ToList();
+        
         if (selectRoles != null)
         {
             foreach (var role in selectRoles)
@@ -167,16 +174,16 @@ public class BattleLoader : MonoBehaviour
                 AddRole(role.GetJyx2RoleId(), 0);
             }
         }
-
+        
         //预配置队友
-        foreach (var v in battle.TeamMates)
+        foreach (var v in teamMates)
         {
-            AddRole(v.Id, 0);
+            AddRole(int.Parse(v), 0);
         }
 
-        foreach (var v in battle.Enemies)
+        foreach (var v in enemies)
         {
-            AddRole(v.Id, 1);
+            AddRole(int.Parse(v), 1);
         }
 
         return InitBattle(callback, battle);
@@ -213,10 +220,20 @@ public class BattleLoader : MonoBehaviour
         List<RoleInstance> roles = new List<RoleInstance>();
         foreach (var r in m_Roles)
         {
-            //队友取队伍实例，敌人新生成
-            RoleInstance roleInstance = runtime.GetRoleInTeam(r.roleKey);
+            //从存档中取，否则新生成
+            RoleInstance roleInstance = runtime.GetRole(r.roleKey);
+
+            //如果不是队伍中的，则从存档中拷贝一份
+            if (!runtime.IsRoleInTeam(r.roleKey))
+            {
+                roleInstance = roleInstance.Clone();
+                roleInstance.Recover();
+            }
+            
+            //如果存档中没有记录（理论上不可能？除非是存档过期了，与当前配置表不匹配）
             if (roleInstance == null)
             {
+                Debug.LogError($"载入角色出错，存档中没有该角色，强行从配置表生成。key={r.roleKey}");
                 roleInstance = new RoleInstance(r.roleKey); 
             }
 

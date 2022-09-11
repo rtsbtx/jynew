@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: jynew
-  productName: jynew
+  productName: wuxia_launch
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
@@ -39,9 +39,7 @@ PlayerSettings:
     y: 0
     width: 1
     height: 1
-  m_SplashScreenLogos:
-  - logo: {fileID: 21300000, guid: 08dcb736393c6b34aba2d8dabc59810c, type: 3}
-    duration: 2
+  m_SplashScreenLogos: []
   m_VirtualRealitySplashScreen: {fileID: 0}
   m_ShowUnitySplashAds: 0
   m_AdsAndroidGameId: 
@@ -147,7 +145,7 @@ PlayerSettings:
     16:10: 1
     16:9: 1
     Others: 1
-  bundleVersion: 20220429
+  bundleVersion: 20220823
   preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
@@ -167,7 +165,7 @@ PlayerSettings:
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
     Android: com.jynew.jynew
-    Standalone: com.jynew.jynew
+    Standalone: com.jynew.wuxia-launch
     iPhone: com.hanjiasongshu.hjjh2
   buildNumber:
     Standalone: 0
@@ -285,7 +283,7 @@ PlayerSettings:
   - m_BuildTarget: 
     m_Icons:
     - serializedVersion: 2
-      m_Icon: {fileID: 2800000, guid: 1f6b1b3f6d54e624c9554586293c4f4a, type: 3}
+      m_Icon: {fileID: 2800000, guid: e8251306d34e4414a8294238afa68327, type: 3}
       m_Width: 128
       m_Height: 128
       m_Kind: 0
@@ -790,9 +788,9 @@ PlayerSettings:
   webGLThreadsSupport: 0
   webGLDecompressionFallback: 0
   scriptingDefineSymbols:
-    1: UNITY_POST_PROCESSING_STACK_V2;AMPLIFY_SHADER_EDITOR;ODIN_INSPECTOR;GAIA_PRESENT;ODIN_INSPECTOR_3;GPU_INSTANCER;UNITASK_ADDRESSABLE_SUPPORT
+    1: UNITY_POST_PROCESSING_STACK_V2;AMPLIFY_SHADER_EDITOR;ODIN_INSPECTOR;GAIA_PRESENT;ODIN_INSPECTOR_3;GPU_INSTANCER;STEAMWORKS_NET
     4: UNITY_POST_PROCESSING_STACK_V2;ODIN_INSPECTOR;ODIN_INSPECTOR_3
-    7: PLIFY_SHADER_EDITORNG_STACK_V2;AMPLIFY_SHADER_EDITOR;UNITY_POST_PROCESSING_STACK_V2;SUBSTANCE_PLUGIN_ENABLED;ODIN_INSPECTOR;ODIN_INSPECTOR_3;UNITASK_ADDRESSABLE_SUPPORT;GPU_INSTANCER
+    7: PLIFY_SHADER_EDITORNG_STACK_V2;AMPLIFY_SHADER_EDITOR;UNITY_POST_PROCESSING_STACK_V2;SUBSTANCE_PLUGIN_ENABLED;ODIN_INSPECTOR;ODIN_INSPECTOR_3;GPU_INSTANCER
     13: UNITY_POST_PROCESSING_STACK_V2;GPU_INSTANCER;ODIN_INSPECTOR;ODIN_INSPECTOR_3
     14: UNITY_POST_PROCESSING_STACK_V2
     18: UNITY_POST_PROCESSING_STACK_V2

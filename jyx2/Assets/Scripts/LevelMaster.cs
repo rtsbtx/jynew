@@ -61,6 +61,7 @@ public class LevelMaster : MonoBehaviour
 	private Jyx2Player _gameMapPlayer;
 	
 	NavMeshAgent _playerNavAgent;
+	NavMeshPath _cachePath;
 	GameObject _navPointer;
 
 	//寻路终点图标
@@ -123,7 +124,7 @@ public class LevelMaster : MonoBehaviour
 	/// </summary>
 	public bool IsInWorldMap
 	{
-		get { return _currentMap?.IsWorldMap() ?? false; }
+		get { return _currentMap?.Tags.Contains("WORLDMAP") ?? false; }
 	}
 
 	// Use this for initialization
@@ -156,7 +157,7 @@ public class LevelMaster : MonoBehaviour
 		var gameMap = GetCurrentGameMap();
 		if (gameMap != null && !IsInBattle)
 		{
-			if (gameMap.IsWorldMap())//JYX2 临时测试
+			if (gameMap.Tags.Contains("WORLDMAP"))//JYX2 临时测试
 			{
 				var btn = transform.Find("UI/MainUI/BackButton");
 				if (btn != null)
@@ -179,7 +180,7 @@ public class LevelMaster : MonoBehaviour
 		TryBindPlayer().Forget();
 		
 		//大地图不能使用跟随相机（目前好像比较卡？）
-		if (gameMap != null && !gameMap.IsWorldMap() && _gameMapPlayer != null)
+		if (gameMap != null && !gameMap.Tags.Contains("WORLDMAP") && _gameMapPlayer != null)
 		{
 			//初始化跟随相机
 			GameViewPortManager.Instance.InitForLevel(_gameMapPlayer.transform);
@@ -210,7 +211,7 @@ public class LevelMaster : MonoBehaviour
 			}
 		}
 
-		if (gameMap != null && !gameMap.IsWorldMap())
+		if (gameMap != null && !gameMap.Tags.Contains("WORLDMAP"))
 		{
 			//调整摄像机参数
 			UpdateCameraParams();
@@ -231,7 +232,7 @@ public class LevelMaster : MonoBehaviour
 	public void UpdateCameraParams()
 	{
 		//世界地图取默认场景的设置
-		if (_currentMap.IsWorldMap())
+		if (_currentMap.Tags.Contains("WORLDMAP"))
 			return;
 		
 		//调整摄像机参数
@@ -263,28 +264,27 @@ public class LevelMaster : MonoBehaviour
 		}
 	}
 
-	private void PlayMusic(Jyx2ConfigMap gameMap)
+	private void PlayMusic(Jyx2ConfigMap currentMap)
 	{
-		if (gameMap == null) return;
-
-		//首先播放进门音乐
-		if (!AudioManager.PlayMusic(gameMap.InMusic))
+		if (currentMap == null) return;
+		
+		//有上一张图的出门音乐就放该音乐
+		if (LastGameMap != null)
 		{
-
-			//如果没有在，则播放出门音乐
-			if (LastGameMap != null)
+			if (LastGameMap.ForceSetLeaveMusicId != -1)
 			{
-				if (LastGameMap.ForceSetLeaveMusicId != -1)
-				{
-					AudioManager.PlayMusic(LastGameMap.ForceSetLeaveMusicId);
-				}
-
-				if (LastGameMap.OutMusic != null)
-				{
-					AudioManager.PlayMusic(LastGameMap.OutMusic);
-				}
+				AudioManager.PlayMusic(LastGameMap.ForceSetLeaveMusicId);
+				return;
+			}
+			if (LastGameMap.OutMusic != -1)
+			{
+				AudioManager.PlayMusic(LastGameMap.OutMusic);
+				return;
 			}
 		}
+		//没有就放进门的
+		AudioManager.PlayMusic(currentMap.InMusic);
+
 	}
 
 	public void PlayMusicAtPath(string musicPath)
@@ -317,7 +317,7 @@ public class LevelMaster : MonoBehaviour
 
 		if (loadPara.loadType == LevelLoadPara.LevelLoadType.Load)
 		{
-			if (map.IsWorldMap())
+			if (map.Tags.Contains("WORLDMAP"))
 			{
 				GetPlayer().LoadWorldInfo();
 			}
@@ -329,7 +329,7 @@ public class LevelMaster : MonoBehaviour
 		}
 		else if (loadPara.loadType == LevelLoadPara.LevelLoadType.Entrance)
 		{
-			if (map.IsWorldMap()) //大地图
+			if (map.Tags.Contains("WORLDMAP")) //大地图
 			{
 				GetPlayer().LoadWorldInfo();
 			}
@@ -346,7 +346,7 @@ public class LevelMaster : MonoBehaviour
 		{
 			Transport(loadPara.triggerName);
 
-			if (_currentMap.IsWorldMap())
+			if (_currentMap.Tags.Contains("WORLDMAP"))
 				GetPlayer().LoadBoat();
 		}
 		else if (loadPara.loadType == LevelLoadPara.LevelLoadType.ReturnFromBattle)
@@ -357,6 +357,9 @@ public class LevelMaster : MonoBehaviour
 
 			PlayerSpawnAt(loadPara.Pos);
 			PlayerSpawnRotate(loadPara.Rotate);
+			
+			
+			SetPlayerCanController(true);
 		}
 	}
 
@@ -394,7 +397,7 @@ public class LevelMaster : MonoBehaviour
 
 		SetPlayerSpeed(0);
 		var gameMap = GetCurrentGameMap();
-		if (gameMap != null && gameMap.IsWorldMap())
+		if (gameMap != null && gameMap.Tags.Contains("WORLDMAP"))
 		{
 			_playerNavAgent.speed = GlobalAssetConfig.Instance.playerMoveSpeedWorldMap;
 		}
@@ -519,15 +522,25 @@ public class LevelMaster : MonoBehaviour
 		_playerNavAgent.Warp(fromVector);
 		_playerNavAgent.isStopped = false;
 		_playerNavAgent.updateRotation = true;
+		
+		//寻找最近的点
+		NavMeshHit hit;
+		if (NavMesh.SamplePosition(toVector, out hit, 10, 1 << LayerMask.NameToLayer("Ground")))
+		{
+			toVector = hit.position;
+		}
+		
 		_playerNavAgent.SetDestination(toVector);
 	}
 
 	void OnClickControlPlayer()
 	{
+		if (_playerNavAgent == null)
+			return;
 		SetPlayerSpeed(_playerNavAgent.velocity.magnitude);
 
 
-		if (_playerNavAgent == null || !_playerNavAgent.enabled || !_playerNavAgent.isOnNavMesh) return;
+		if (!_playerNavAgent.enabled || !_playerNavAgent.isOnNavMesh) return;
 
 		//到达目的地了
 		if (!_playerNavAgent.pathPending && _playerNavAgent.enabled && !_playerNavAgent.isStopped && _playerNavAgent.remainingDistance <= _playerNavAgent.stoppingDistance)
@@ -554,15 +567,18 @@ public class LevelMaster : MonoBehaviour
 				//NPC层
 				if (Physics.Raycast(ray, out RaycastHit hitInfo, 500, 1 << LayerMask.NameToLayer("NPC")))
 				{
-					var dist = Vector3.Distance(runtime.Player.View.transform.position, hitInfo.transform.position);
-					Debug.Log("on npc clicked, dist = " + dist);
+					if (runtime.Player.View != null)
+					{
+						var dist = Vector3.Distance(runtime.Player.View.transform.position, hitInfo.transform.position);
+						Debug.Log("on npc clicked, dist = " + dist);
 					
-					//现在没有直接地图上点击NPC的实现
+						//现在没有直接地图上点击NPC的实现	
+					}
 				}
 				//BY CG: MASK：15:Ground层
 				else if (Physics.Raycast(ray, out hitInfo, 500, 1 << LayerMask.NameToLayer("Ground")))
 				{
-					if (_currentMap.IsNoNavAgent())
+					if (_currentMap.Tags.Contains("NONAVAGENT"))
 					{
 						var dest = hitInfo.point;
 						var sourcePos = _gameMapPlayer.transform.position;
@@ -572,13 +588,23 @@ public class LevelMaster : MonoBehaviour
 						_gameMapPlayer.transform.position = Vector3.Lerp(_gameMapPlayer.transform.position, dest, Time.deltaTime);
 						//计算当前速度
 						var speed = (_gameMapPlayer.transform.position - sourcePos).magnitude / Time.deltaTime;
+						_playerNavAgent.updateRotation = true;
 						SetPlayerSpeed(speed);
 					}
 					else
 					{
 						_playerNavAgent.isStopped = false;
 						_playerNavAgent.updateRotation = true;
-						_playerNavAgent.SetDestination(hitInfo.point);	
+						if (_playerNavAgent.SetDestination(hitInfo.point))
+						{
+							if (_cachePath == null)
+								_cachePath = new NavMeshPath();
+
+							bool isPathValid = _playerNavAgent.CalculatePath(_playerNavAgent.destination, _cachePath);
+							if (isPathValid)
+								_playerNavAgent.SetPath(_cachePath);
+						}
+
 					}
 
 					DisplayNavPointer(hitInfo.point);
@@ -923,7 +949,7 @@ public class LevelMaster : MonoBehaviour
 			return;
 		}
 
-		if (_currentMap.IsWorldMap())
+		if (_currentMap.Tags.Contains("WORLDMAP"))
 		{
 			GetPlayer().RecordWorldInfo();
 		}

@@ -22,6 +22,7 @@ using Cysharp.Threading.Tasks;
 using i18n.TranslatorDef;
 using Jyx2Configs;
 using Jyx2.Middleware;
+using UnityEngine.Rendering.PostProcessing;
 
 namespace Jyx2
 {
@@ -565,8 +566,8 @@ namespace Jyx2
             RunInMainThread(() =>
             {
                 var role = runtime.GetRole(roleId);
-                role.IQ = Tools.Limit(role.IQ + v, 0, GameConst.MAX_ZIZHI);
-                storyEngine.DisplayPopInfo(role.Name + "资质增加" + v);
+                role.IQ = Tools.Limit(role.IQ + v, 0, GameConst.MAX_ROLE_ZIZHI);
+                storyEngine.DisplayPopInfo(role.Name + "资质" + (v > 0 ? "增加" : "减少") + Math.Abs(v));
                 Next();
             });
             Wait();
@@ -632,7 +633,7 @@ namespace Jyx2
             {
                 var r = runtime.GetRole(roleId);
                 var v0 = r.Qinggong;
-                r.Qinggong = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRITE);
+                r.Qinggong = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRIBUTE);
                 storyEngine.DisplayPopInfo(r.Name + "轻功增加" + (r.Qinggong - v0));
                 Next();
             });
@@ -646,8 +647,8 @@ namespace Jyx2
             {
                 var r = runtime.GetRole(roleId);
                 var v0 = r.MaxMp;
-                r.MaxMp = Tools.Limit(v0 + value, 0, GameConst.MAX_HPMP);
-                r.Mp = Tools.Limit(r.Mp + value, 0, GameConst.MAX_HPMP);
+                r.MaxMp = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_MP);
+                r.Mp = Tools.Limit(r.Mp + value, 0, GameConst.MAX_ROLE_MP);
                 storyEngine.DisplayPopInfo(r.Name + "内力增加" + (r.MaxMp - v0));
                 Next();
             });
@@ -661,7 +662,7 @@ namespace Jyx2
             {
                 var r = runtime.GetRole(roleId);
                 var v0 = r.Attack;
-                r.Attack = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRITE);
+                r.Attack = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRIBUTE);
                 storyEngine.DisplayPopInfo(r.Name + "武力增加" + (r.Attack - v0));
                 Next();
             });
@@ -675,8 +676,8 @@ namespace Jyx2
             {
                 var r = runtime.GetRole(roleId);
                 var v0 = r.MaxHp;
-                r.MaxHp = Tools.Limit(v0 + value, 0, GameConst.MAX_HPMP);
-                r.Hp = Tools.Limit(r.Hp + value, 0, GameConst.MAX_HPMP);
+                r.MaxHp = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_HP);
+                r.Hp = Tools.Limit(r.Hp + value, 0, GameConst.MAX_ROLE_HP);
                 storyEngine.DisplayPopInfo(r.Name + "生命增加" + (r.MaxHp - v0));
                 Next();
             });
@@ -693,6 +694,15 @@ namespace Jyx2
         public static void instruct_50(int p1,int p2,int p3,int p4,int p5,int p6,int p7)
         {
 
+        }
+        
+        public static void ShowMessage(string message)
+        {
+            RunInMainThread(() =>
+            {
+                MessageBox.Create(message, Next);
+            });
+            Wait();
         }
 
         public static void ShowEthics()
@@ -959,7 +969,10 @@ namespace Jyx2
             {
                 foreach (var role in runtime.GetTeam())
                 {
-                    role.Recover(role.Hurt < 33 && role.Poison <= 0);
+                    if (role.Hurt < 33 && role.Poison <= 0)
+                    {
+                        role.Recover();
+                    }
                 }
             });
         }
@@ -970,7 +983,10 @@ namespace Jyx2
             {
                 foreach (var role in runtime.GetTeam())
                 {
-                    role.Recover(role.Hurt < 50 && role.Poison <= 0);
+                    if (role.Hurt < 50 && role.Poison <= 0)
+                    {
+                        role.Recover();    
+                    }
                 }
             });
         }
@@ -1018,14 +1034,18 @@ namespace Jyx2
                     return;
                 }
 
+                var stringBuilder = new System.Text.StringBuilder();
+                var token = nameof(Jyx2LuaBridge);
+                int displayCount = Mathf.Abs(count);
                 if (count < 0)
                 {
+                    displayCount = Mathf.Min(displayCount, runtime.GetItemCount(itemId));
                     //---------------------------------------------------------------------------
                     //storyEngine.DisplayPopInfo("失去物品:" + item.Name + "×" + Math.Abs(count));
                     //---------------------------------------------------------------------------
                     //特定位置的翻译【得到物品提示】
                     //---------------------------------------------------------------------------
-                    storyEngine.DisplayPopInfo("失去物品：".GetContent(nameof(Jyx2LuaBridge)) + item.Name + "×" + Math.Abs(count));
+                    stringBuilder.Append("失去物品：".GetContent(token));
                     //---------------------------------------------------------------------------
                     //---------------------------------------------------------------------------
                 }
@@ -1036,10 +1056,14 @@ namespace Jyx2
                     //---------------------------------------------------------------------------
                     //特定位置的翻译【得到物品提示】
                     //---------------------------------------------------------------------------
-                    storyEngine.DisplayPopInfo("得到物品：".GetContent(nameof(Jyx2LuaBridge)) + item.Name + "×" + Math.Abs(count));
+                    stringBuilder.Append("得到物品：".GetContent(token));
                     //---------------------------------------------------------------------------
                     //---------------------------------------------------------------------------
                 }
+                stringBuilder.Append(item.Name);
+                stringBuilder.Append("×");
+                stringBuilder.Append(displayCount);
+                storyEngine.DisplayPopInfo(stringBuilder.ToString());
 
                 runtime.AddItem(itemId, count);
             });
@@ -1068,7 +1092,6 @@ namespace Jyx2
             {
                 if (LevelMaster.Instance.IsInWorldMap)
                 {
-                    storyEngine.DisplayPopInfo("大地图中无法打开商店，需到客栈中使用");
                     Next();
                     return;
                 }
@@ -1077,7 +1100,6 @@ namespace Jyx2
                 var hasData = GameConfigDatabase.Instance.Has<Jyx2ConfigShop>(mapId); // mapId和shopId对应
                 if (!hasData)
                 {
-                    storyEngine.DisplayPopInfo($"地图{mapId}没有配置商店，可在excel/JYX2小宝商店.xlsx中查看");
                     Next();
                     return;
                 }
@@ -1093,7 +1115,7 @@ namespace Jyx2
         {
             RunInMainThread(() => {
                 
-                var eventLuaPath = string.Format(GlobalAssetConfig.Instance.startMod.LuaFilePatten, UnityEngine.Random.Range(801, 820).ToString());
+                var eventLuaPath = string.Format("ka{0}", UnityEngine.Random.Range(801, 820).ToString());
                 Jyx2.LuaExecutor.Execute(eventLuaPath, null);
             });
         }
@@ -1103,7 +1125,190 @@ namespace Jyx2
         {
 
         }
-
+		//新增函数 by citydream
+		//判断IQ
+        public static bool JudgeIQ(int roleId,int low,int high)
+        {
+            return JudgeRoleValue(roleId, (r) => { return r.IQ >= low && r.IQ <= high; });
+        }
+		//医疗
+        public static void AddHeal(int roleId, int value)
+        {
+            RunInMainThread(() =>
+            {
+                var r = runtime.GetRole(roleId);
+                var v0 = r.Heal;
+                r.Heal = Tools.Limit(v0 + value, 0, GameConst.MAX_HEAL);
+                storyEngine.DisplayPopInfo(r.Name + "医疗增加" + (r.Heal - v0));
+                Next();
+            });
+            Wait();
+        }
+        //防御
+        public static void AddDefence(int roleId, int value)
+        {
+            RunInMainThread(() =>
+            {
+                var r = runtime.GetRole(roleId);
+                var v0 = r.Defence;
+                r.Defence = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_DEFENCE);
+                storyEngine.DisplayPopInfo(r.Name + "防御增加" + (r.Defence - v0));
+                Next();
+            });
+            Wait();
+        }
+		//拳掌
+        public static void AddQuanzhang(int roleId, int value)
+        {
+            RunInMainThread(() =>
+            {
+                var r = runtime.GetRole(roleId);
+                var v0 = r.Quanzhang;
+                r.Quanzhang = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRIBUTE);
+                storyEngine.DisplayPopInfo(r.Name + "拳掌增加" + (r.Quanzhang - v0));
+                Next();
+            });
+            Wait();
+        }
+		//耍刀
+        public static void AddShuadao(int roleId, int value)
+        {
+            RunInMainThread(() =>
+            {
+                var r = runtime.GetRole(roleId);
+                var v0 = r.Shuadao;
+                r.Shuadao = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRIBUTE);
+                storyEngine.DisplayPopInfo(r.Name + "耍刀增加" + (r.Shuadao - v0));
+                Next();
+            });
+            Wait();
+        }
+		//御剑
+        public static void AddYujian(int roleId, int value)
+        {
+            RunInMainThread(() =>
+            {
+                var r = runtime.GetRole(roleId);
+                var v0 = r.Yujian;
+                r.Yujian = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRIBUTE);
+                storyEngine.DisplayPopInfo(r.Name + "御剑增加" + (r.Yujian - v0));
+                Next();
+            });
+            Wait();
+        }
+		//暗器
+        public static void AddAnqi(int roleId, int value)
+        {
+            RunInMainThread(() =>
+            {
+                var r = runtime.GetRole(roleId);
+                var v0 = r.Anqi;
+                r.Anqi = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRIBUTE);
+                storyEngine.DisplayPopInfo(r.Name + "暗器增加" + (r.Anqi - v0));
+                Next();
+            });
+            Wait();
+        }
+		//奇门
+        public static void AddQimen(int roleId, int value)
+        {
+            RunInMainThread(() =>
+            {
+                var r = runtime.GetRole(roleId);
+                var v0 = r.Qimen;
+                r.Qimen = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRIBUTE);
+                storyEngine.DisplayPopInfo(r.Name + "奇门增加" + (r.Qimen - v0));
+                Next();
+            });
+            Wait();
+        }
+		//武学常识
+        public static void AddWuchang(int roleId, int value)
+        {
+            RunInMainThread(() =>
+            {
+                var r = runtime.GetRole(roleId);
+                var v0 = r.Wuxuechangshi;
+                r.Wuxuechangshi = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRIBUTE);
+                storyEngine.DisplayPopInfo(r.Name + "武学常识增加" + (r.Wuxuechangshi - v0));
+                Next();
+            });
+            Wait();
+        }
+		//功夫带毒
+        public static void AddAttackPoison(int roleId, int value)
+        {
+            RunInMainThread(() =>
+            {
+                var r = runtime.GetRole(roleId);
+                var v0 = r.AttackPoison;
+                r.AttackPoison = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRIBUTE);
+                storyEngine.DisplayPopInfo(r.Name + "功夫带毒增加" + (r.AttackPoison - v0));
+                Next();
+            });
+            Wait();
+        }
+        //抗毒
+        public static void AddAntiPoison(int roleId, int value)
+        {
+            RunInMainThread(() =>
+            {
+                var r = runtime.GetRole(roleId);
+                var v0 = r.AntiPoison;
+                r.AntiPoison = Tools.Limit(v0 + value, 0, GameConst.MAX_ROLE_ATTRIBUTE);
+                storyEngine.DisplayPopInfo(r.Name + "抗毒增加" + (r.AttackPoison - v0));
+                Next();
+            });
+            Wait();
+        }
+		//经验
+        public static void AddExp(int roleId, int value)
+        {
+            RunInMainThread(() =>
+            {
+                var r = runtime.GetRole(roleId);
+                var v0 = r.Exp;
+                r.Exp = Tools.Limit(v0 + value, 0, GameConst.MAX_EXP);
+                storyEngine.DisplayPopInfo(r.Name + "经验增加" + (r.Exp - v0));
+                Next();
+            });
+            Wait();
+        }
+		//判断武学常识
+        public static bool JudgeWCH(int roleId,int low,int high)
+        {
+            return JudgeRoleValue(roleId, (r) => { return r.Wuxuechangshi >= low && r.Wuxuechangshi <= high; });
+        }
+		//判断医疗
+        public static bool JudgeHeal(int roleId,int low,int high)
+        {
+            return JudgeRoleValue(roleId, (r) => { return r.Heal >= low && r.Heal <= high; });
+        }
+		//判断拳掌
+        public static bool JudgeQuanzhang(int roleId,int low,int high)
+        {
+            return JudgeRoleValue(roleId, (r) => { return r.Quanzhang >= low && r.Quanzhang <= high; });
+        }
+		//判断御剑
+        public static bool JudgeYujian(int roleId,int low,int high)
+        {
+            return JudgeRoleValue(roleId, (r) => { return r.Yujian >= low && r.Yujian <= high; });
+        }
+		//判断攻击带毒
+        public static bool JudgeAttackPoison(int roleId,int low,int high)
+        {
+            return JudgeRoleValue(roleId, (r) => { return r.AttackPoison >= low && r.AttackPoison <= high; });
+        }
+		//判断奇门
+        public static bool JudgeQimen(int roleId,int low,int high)
+        {
+            return JudgeRoleValue(roleId, (r) => { return r.Qimen >= low && r.Qimen <= high; });
+        }
+		//判断防御
+        public static bool JudgeDefence(int roleId,int low,int high)
+        {
+            return JudgeRoleValue(roleId, (r) => { return r.Defence >= low && r.Defence <= high; });
+        }
         #region 扩展函数
         public static void jyx2_ReplaceSceneObject(string scene,string path, string replace)
         {
@@ -1456,6 +1661,16 @@ namespace Jyx2
             jyx2_Wait(1);
             LightScence();
         }
+        
+        public static void BackToMainMenu()
+        {
+            RunInMainThread(() =>
+            {
+                LoadingPanel.Create(null).Forget();
+                Next();
+            });
+            Wait();
+        }
 
         public static void jyx2_SetFlag(string flagKey, string value)
         {
@@ -1517,7 +1732,7 @@ namespace Jyx2
 
         private static int _selectResult;
 
-        private static bool ShowYesOrNoSelectPanel(string selectMessage)
+        public static bool ShowYesOrNoSelectPanel(string selectMessage)
         {
             async void Action()
             {
@@ -1535,6 +1750,25 @@ namespace Jyx2
 
             Wait();
             return _selectResult == 0;
+        }
+        
+        public static int ShowSelectPanel(int roleId, string selectMessage, params string[] selectionContent)
+        {
+            async void Action()
+            {
+                storyEngine.BlockPlayerControl = true;
+                await Jyx2_UIManager.Instance.ShowUIAsync(nameof(ChatUIPanel), ChatType.Selection, roleId.ToString(), selectMessage, selectionContent.ToList(), new Action<int>((index) =>
+                {
+                    _selectResult = index;
+                    storyEngine.BlockPlayerControl = false;
+                    Next();
+                }));
+            }
+
+            RunInMainThread(Action);
+
+            Wait();
+            return _selectResult;
         }
 
         private static bool JudgeRoleValue(int roleId, Predicate<RoleInstance> judge)
@@ -1565,5 +1799,132 @@ namespace Jyx2
 
 
         #endregion
+        
+        /// <summary>
+        /// 获取队伍人数
+        /// </summary>
+        /// <returns></returns>
+        public static int GetTeamMembersCount() {
+            return runtime.GetTeamMembersCount();
+        }
+        
+        /// <summary>
+        /// 获取指定角色等级
+        /// </summary>
+        /// <param name="roleId"></param>
+        /// <returns></returns>
+        public static int GetRoleLevel(int roleId) {
+            return runtime.GetRole(roleId).Level;
+        }
+
+        /// <summary>
+        /// 获取队伍生命总和
+        /// </summary>
+        /// <returns></returns>
+        public static int GetTeamTotalHp()
+        {
+            int totalHp = 0;
+            RunInMainThread(() =>
+            {
+                foreach (var role in runtime.GetTeam())
+                {
+                    totalHp += role.Hp;
+                }
+                Next();
+            });
+            Wait();
+            return totalHp;
+        }
+
+        /// <summary>
+        /// 获取队伍角色Id列表
+        /// </summary>
+        /// <returns></returns>
+        public static List<int> GetTeamId()
+        {
+            return runtime.GetTeamId();
+        }
+        
+        /// <summary>
+        /// 指定角色使用物品
+        /// </summary>
+        /// <param name="roleId"></param>
+        /// <param name="itemId"></param>
+        public static void RoleUseItem(int roleId, int itemId)
+        {
+            RunInMainThread(() =>
+            {
+                var item = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(itemId);
+                var role = runtime.GetRole(roleId);
+                //武器
+                if ((int)item.EquipmentType == 0)
+                {
+                    role.Weapon = itemId;
+                }
+                //防具
+                else if ((int)item.EquipmentType == 1)
+                {
+                    role.Armor = itemId;
+                }
+                role.UseItem(item);
+                runtime.SetItemUser(itemId, roleId);
+                Next();
+            });
+            Wait();
+        }
+        
+        /// <summary>
+        /// 指定角色卸下物品（装备）
+        /// </summary>
+        /// <param name="roleId"></param>
+        /// <param name="itemId"></param>
+        public static void RoleUnequipItem(int roleId, int itemId)
+        {
+            RunInMainThread(() =>
+            {
+                var role = runtime.GetRole(roleId);
+                var item = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(itemId);
+                //武器
+                if ((int)item.EquipmentType == 0)
+                {
+                    role.Weapon = -1;
+                }
+                //防具
+                else if ((int)item.EquipmentType == 1)
+                {
+                    role.Armor = -1;
+                }
+                role.UnequipItem(item);
+                Next();
+            });
+            Wait();
+        }
+
+
+        /// <summary>
+        /// 开启/关闭屏幕后处理中的边缘阴影
+        /// 要求场景中必须已正确配置 PostProcessVolumn，并具有预先配置好的Vignette组件
+        /// </summary>
+        /// <param name="isOn"></param>
+        public static void ScreenVignette(bool isOn)
+        {
+            RunInMainThread((() =>
+            {
+                var postProcess = GameObject.FindObjectOfType<PostProcessVolume>();
+                if (postProcess == null)
+                {
+                    Debug.LogError("错误：调用ScreenVignette的场景必须包含PostProcessVolumn组件");
+                    Next();
+                    return;
+                }
+
+                if (postProcess.profile.TryGetSettings<Vignette>(out var vignette))
+                {
+                    vignette.active = isOn;    
+                }
+                Next();
+            }));
+            Wait();
+        }
     }
 }

@@ -296,7 +296,7 @@ public class AIManager
             //用毒算分
             if (skill is PoisonSkillCastInstance)
             {
-                score = Mathf.Min(GameConst.MAX_POISON - targetRole.Poison, caster.UsePoison) * 0.5;
+                score = Mathf.Min(GameConst.MAX_POISON - targetRole.Poison, caster.UsePoison) * 0.1;
                 if (targetRole.Hp < 10)
                 {
                     score = 1;
@@ -310,7 +310,7 @@ public class AIManager
                 {
                     score = targetRole.Hp * 1.25;
                 }
-                score *= 0.5;//暗器分值略低
+                score *= 0.1;//暗器分值略低
             }
         }
 
@@ -601,7 +601,7 @@ public class AIManager
             //点、线、十字的伤害，距离就是两人相差的格子数，最小为1。
             //面攻击时，距离是两人相差的格子数＋敌人到攻击点的距离。
             int dist = r1.Pos.GetDistance(r2.Pos);
-            if (skill.GetCoverType() == SkillCoverType.RECT)
+            if (skill.GetCoverType() == SkillCoverType.RECT || skill.GetCoverType() == SkillCoverType.RHOMBUS)
             {
                 dist += blockVector.GetDistance(r2.Pos);
             }
@@ -701,7 +701,7 @@ public class AIManager
             foreach (var kv in GameRuntimeData.Instance.Items)
             {
                 string id = kv.Key;
-                int count = kv.Value;
+                int count = kv.Value.Item1;
 
                 var item = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(id);
                 if ((int)item.ItemType == itemType)
@@ -712,7 +712,7 @@ public class AIManager
         {
             foreach (var item in role.Items)
             {
-                var tmp = item.Item;
+                var tmp = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(item.Id);
                 if ((int)tmp.ItemType == itemType)
                     items.Add(tmp);
             }
@@ -755,7 +755,10 @@ public class AIManager
         SkillCastResult rst = new SkillCastResult();
         if (r2.Hurt > r1.Heal + 20)
         {
-            GameUtil.DisplayPopinfo("受伤太重无法医疗");
+            if (!BattleManager.Instance.IsInBattle)
+            {
+                GameUtil.DisplayPopinfo("受伤太重无法医疗");
+            }
             return rst;
         }
         //增加生命 = 医疗能力 * a + random(5);
@@ -786,7 +789,10 @@ public class AIManager
     {
         if (r2.Poison > r1.DePoison + 20)
         {
-            GameUtil.DisplayPopinfo("中毒太重无法解毒");
+            if (!BattleManager.Instance.IsInBattle)
+            {
+                GameUtil.DisplayPopinfo("中毒太重无法解毒"); 
+            }
             return 0;
         }
         int add = (r1.DePoison / 3) + UnityEngine.Random.Range(0, 10) - UnityEngine.Random.Range(0, 10);

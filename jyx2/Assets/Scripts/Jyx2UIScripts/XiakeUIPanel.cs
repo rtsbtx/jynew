@@ -257,7 +257,7 @@ public partial class XiakeUIPanel : Jyx2_UIBase
 	{
 
 		var curMap = LevelMaster.GetCurrentGameMap();
-		if (!curMap.IsWorldMap())
+		if (!curMap.Tags.Contains("WORLDMAP"))
 		{
 			GameUtil.DisplayPopinfo("必须在大地图才可以角色离队");
 			return;
@@ -292,7 +292,7 @@ public partial class XiakeUIPanel : Jyx2_UIBase
 		this.gameObject.SetActive(false);
 		var s = new UniTaskCompletionSource();
 
-		var eventPath = string.Format(GlobalAssetConfig.Instance.startMod.LuaFilePatten, story);
+		var eventPath = string.Format(RuntimeEnvSetup.CurrentModConfig.LuaFilePatten, story);
 		
 		Jyx2.LuaExecutor.Execute(eventPath, () =>
 		{
@@ -377,7 +377,7 @@ public partial class XiakeUIPanel : Jyx2_UIBase
 			}
 			else
 			{
-				if (item.NeedCastration) //辟邪剑谱和葵花宝典
+				if (item.NeedCastration == 1) //辟邪剑谱和葵花宝典
 				{
 					await GameUtil.ShowYesOrNoCastrate(m_currentRole, () =>
 					{

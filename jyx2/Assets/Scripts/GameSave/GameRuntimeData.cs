@@ -14,6 +14,7 @@ using System.IO;
 using System.Text;
 using ES3Types;
 using i18n.TranslatorDef;
+using Jyx2.Middleware;
 using Jyx2Configs;
 using UnityEngine;
 
@@ -67,7 +68,16 @@ namespace Jyx2
 
         public static string GetSummaryFilePath(int index)
         {
-            return string.Format(ARCHIVE_SUMMARY_FILE_NAME, index);
+            //根据MOD区分存档空间
+            var mod = RuntimeEnvSetup.CurrentModId;
+            if (mod.Equals(GameConst.DEFAULT_GAME_MOD_NAME))
+            {
+                return string.Format(ARCHIVE_SUMMARY_FILE_NAME, index);    
+            }
+            else
+            {
+                return mod + "_" + string.Format(ARCHIVE_SUMMARY_FILE_NAME, index);
+            }
         }
         
         const string ARCHIVE_SUMMARY_FILE_NAME = "archive_summary_{0}.dat";
@@ -105,12 +115,13 @@ namespace Jyx2
         [SerializeField] public WorldMapSaveData WorldData; //世界地图信息
         
         [SerializeField] public Dictionary<string, string> KeyValues = new Dictionary<string, string>(); //主键值对数据
-        [SerializeField] public Dictionary<string, int> Items = new Dictionary<string, int>(); //JYX2物品，{ID，数量}
+        [SerializeField] public Dictionary<string, (int, int)> Items = new Dictionary<string, (int, int)>(); //JYX2物品，{ID，数量，获取时间}
         [SerializeField] public Dictionary<string, int> ItemUser= new Dictionary<string, int>(); //物品使用人，{物品ID，人物ID}
         [SerializeField] public Dictionary<string, int> ShopItems= new Dictionary<string, int>(); //小宝商店物品，{ID，数量}
         [SerializeField] public Dictionary<string, int> EventCounter = new Dictionary<string, int>();
         [SerializeField] public Dictionary<string, int> MapPic = new Dictionary<string, int>();
         [SerializeField] private List<int> ItemAdded = new List<int>(); //已经添加的角色物品
+
         #endregion
 
         #region JYX2
@@ -200,10 +211,21 @@ namespace Jyx2
 
 
         public const string ARCHIVE_FILE_NAME = "archive_{0}.dat";
-        public const string ARCHIVE_FILE_DIR = "Save";
-        
-        [Obsolete("待删除")]
-        public const string ARCHIVE_SUMMARY_PREFIX = "save_summaryinfo_new_";
+
+        public static string GetArchiveFile(int index)
+        {
+            //根据MOD区分存档空间
+            var mod = RuntimeEnvSetup.CurrentModId;
+            if (mod.Equals(GameConst.DEFAULT_GAME_MOD_NAME))
+            {
+                return string.Format(ARCHIVE_FILE_NAME, index);    
+            }
+            else
+            {
+                return mod + "_" + string.Format(ARCHIVE_FILE_NAME, index);
+            }
+        }
+
 
         public void GameSave(int index = -1)
         {
@@ -225,19 +247,19 @@ namespace Jyx2
             GameSaveSummary summary = new GameSaveSummary()
             {
                 Summary = GenerateSaveSummaryInfo(),
-                ModId = GlobalAssetConfig.Instance.startMod.ModId,
-                ModName = GlobalAssetConfig.Instance.startMod.ModName,
+                ModId = RuntimeEnvSetup.CurrentModId,
+                ModName = RuntimeEnvSetup.CurrentModId,
             };
             GameSaveSummary.Save(fileIndex, summary);
             
             //存档
-            string path = string.Format(ARCHIVE_FILE_NAME, fileIndex);
+            var path = GetArchiveFile(fileIndex);
             ES3.Save(nameof(GameRuntimeData), this, path);
         }
 
         public static GameRuntimeData LoadArchive(int fileIndex)
         {
-            string path = string.Format(ARCHIVE_FILE_NAME, fileIndex);
+            var path = GetArchiveFile(fileIndex);
             var runtime =  ES3.Load<GameRuntimeData>(nameof(GameRuntimeData), path);
             _instance = runtime;
             return runtime;
@@ -259,6 +281,11 @@ namespace Jyx2
             get { return GetRole(0); }
         }
 
+        //获取队伍角色Id列表
+        public List<int> GetTeamId()
+        {
+            return TeamId;
+        }
 
         //获取队伍所有角色
         public IEnumerable<RoleInstance> GetTeam()
@@ -293,11 +320,11 @@ namespace Jyx2
             //获得角色身上的道具
             foreach (var item in role.Items)
             {
-                if (!ItemAdded.Contains(item.Item.Id))
+                if (!ItemAdded.Contains(item.Id))
                 {
                     if (item.Count == 0) item.Count = 1;
-                    AddItem(item.Item.Id, item.Count);
-                    ItemAdded.Add(item.Item.Id);
+                    AddItem(item.Id, item.Count);
+                    ItemAdded.Add(item.Id);
                     if (item.Count > 0 && showGetItem)
                     {
                         //---------------------------------------------------------------------------
@@ -305,7 +332,7 @@ namespace Jyx2
                         //---------------------------------------------------------------------------
                         //特定位置的翻译【得到物品提示】
                         //---------------------------------------------------------------------------
-                        StoryEngine.Instance.DisplayPopInfo("得到物品:".GetContent(nameof(GameRuntimeData)) + item.Item.Name + "×" + Math.Abs(item.Count));
+                        StoryEngine.Instance.DisplayPopInfo("得到物品:".GetContent(nameof(GameRuntimeData)) + GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(item.Id).Name + "×" + Math.Abs(item.Count));
                         //---------------------------------------------------------------------------
                         //---------------------------------------------------------------------------
                     }
@@ -348,7 +375,7 @@ namespace Jyx2
             role.Xiulianwupin = -1;
 
             TeamId.Remove(roleId);
-            role.Recover(true);
+            role.Recover();
             return true;
         }
 
@@ -425,15 +452,15 @@ namespace Jyx2
                     Debug.LogError("扣了不存在的物品,id=" + id + ",count=" + count);
                     return;
                 }
-                Items[id] = count;
+                Items[id] = (count, Tools.GetSecondsSince1970());
             }
             else
             {
-                Items[id] += count;
-                if(Items[id] == 0)
+                Items[id] = (Items[id].Item1 + count, Tools.GetSecondsSince1970());
+                if(Items[id].Item1 == 0)
                 {
                     Items.Remove(id);
-                }else if(Items[id] < 0)
+                }else if(Items[id].Item1 < 0)
                 {
                     Debug.LogError("物品扣成负的了,id=" + id + ",count=" + count);
                     Items.Remove(id);
@@ -451,7 +478,7 @@ namespace Jyx2
         public int GetItemCount(int id)
         {
             if (Items.ContainsKey(id.ToString()))
-                return Items[id.ToString()];
+                return Items[id.ToString()].Item1;
             return 0;
         }
 
@@ -567,11 +594,11 @@ namespace Jyx2
         /// <returns></returns>
         public int GetSceneEntranceCondition(int mapId)
         {
-            var gameMap = Jyx2ConfigMap.Get(mapId);
+            var gameMap = GameConfigDatabase.Instance.Get<Jyx2ConfigMap>(mapId);
             if (gameMap == null) return -1;
             
             //大地图
-            if (gameMap.IsWorldMap())
+            if (gameMap.Tags.Contains("WORLDMAP"))
                 return 0;
 
             //已经有地图打开的纪录

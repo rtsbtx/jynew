@@ -83,7 +83,7 @@ namespace Jyx2
             Key = roleId;
             BindKey();
             InitData();
-            Recover(true);
+            Recover();
         }
 
         public void BindKey()
@@ -99,8 +99,16 @@ namespace Jyx2
             //Wugongs.Clear();			
             if (Wugongs.Count == 0)
             {
-                foreach (var wugong in _data.Skills)
+                var _skills = _data.Skills.Split('|');
+                foreach (var _skill in _skills)
                 {
+                    var _skillArr = _skill.Split(',');
+                    if (_skillArr.Length != 2) continue;
+                    var id = int.Parse(_skillArr[0]);
+                    var level = int.Parse(_skillArr[1]);
+                    var wugong = new Jyx2ConfigCharacterSkill();
+                    wugong.Id = id;
+                    wugong.Level = level;
                     Wugongs.Add(new SkillInstance(wugong));
                 }
             }
@@ -123,9 +131,9 @@ namespace Jyx2
             Mp = Data.MaxMp;
             MaxMp = Data.MaxMp;
             Tili = GameConst.MAX_ROLE_TILI;
-            Weapon = Data.Weapon != null ? Data.Weapon.Id : -1;
-            Armor = Data.Armor != null ? Data.Armor.Id : -1;
-            MpType = (int)Data.MpType;
+            Weapon = Data.Weapon;
+            Armor = Data.Armor;
+            MpType = Data.MpType;
             Attack = Data.Attack;
             Qinggong = Data.Qinggong;
             Defence = Data.Defence;
@@ -154,18 +162,15 @@ namespace Jyx2
             ResetItems();
         }
 
-        public void Recover(bool condition)
+        public void Recover()
         {
-            if (condition)
-            {
-                SetHPAndRefreshHudBar(MaxHp);
+            SetHPAndRefreshHudBar(MaxHp);
 
-                Mp = MaxMp;
-                Tili = GameConst.MAX_ROLE_TILI;
+            Mp = MaxMp;
+            Tili = GameConst.MAX_ROLE_TILI;
 
-                Hurt = 0;
-                Poison = 0;
-            }
+            Hurt = 0;
+            Poison = 0;
         }
 
         public int GetJyx2RoleId()
@@ -383,18 +388,21 @@ namespace Jyx2
         {
             Items.Clear();
             //配置表中添加的物品
-            foreach (var item in Data.Items)
+            var items = Data.Items.Split('|');
+            foreach (var item in items)
             {
-                var generateItem = new Jyx2ConfigCharacterItem();
-                generateItem.Item = item.Item;
-                generateItem.Count = item.Count;
-                Items.Add(generateItem);
+                var itemArr = item.Split(',');
+                if (itemArr.Length != 2) continue;
+                var characterItem = new Jyx2ConfigCharacterItem();
+                characterItem.Id = int.Parse(itemArr[0]);
+                characterItem.Count = int.Parse(itemArr[1]);
+                Items.Add(characterItem);
             }
         }
 
         public bool HaveItemBool(int itemId)
         {
-            return Items.FindIndex(it => it.Item.Id == itemId) != -1;
+            return Items.FindIndex(it => it.Id == itemId) != -1;
         }
 
         /// <summary>
@@ -404,7 +412,7 @@ namespace Jyx2
         /// <param name="count"></param>
         public void AddItem(int itemId, int count)
         {
-            var item = Items.Find(it => it.Item.Id == itemId);
+            var item = Items.Find(it => it.Id == itemId);
 
             if (item != null)
             {
@@ -418,7 +426,7 @@ namespace Jyx2
             {
                 Items.Add(new Jyx2ConfigCharacterItem()
                 {
-                    Item = GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(itemId),
+                    Id = itemId,
                     Count = count
                 });
             }
@@ -472,15 +480,15 @@ namespace Jyx2
                 {
                     foreach (var wugong in Wugongs)
                     {
-                        if (wugong.Key == item.Skill.Id)
+                        if (wugong.Key == item.Skill)
                             return true;
                     }
-                    int level = GetWugongLevel(item.Skill.Id);
+                    int level = GetWugongLevel(item.Skill);
                     //if (level >= 0 && level < GameConst.MAX_WUGONG_LEVEL)
                     //{
                     //    return true;
                     //}
-                    if (level < 0 && this.Wugongs.Count >= GameConst.MAX_ROLE_WUGONG_COUNT)
+                    if (level < 0 && this.Wugongs.Count >= GameConst.MAX_SKILL_COUNT)
                     {
                         return false;
                     }
@@ -550,32 +558,44 @@ namespace Jyx2
         {
             if (practiseItem == null)
                 return "";
-            if (practiseItem.GenerateItems == null)
+            if (practiseItem.GenerateItems == "")
                 return "";
-            if (practiseItem.GenerateItemNeedCost == null)
+            if (practiseItem.GenerateItemNeedCost == -1)
                 return "";
-            if (!runtime.HaveItemBool(practiseItem.GenerateItemNeedCost.Id))
+            if (!runtime.HaveItemBool(practiseItem.GenerateItemNeedCost))
                 return "";
-            int GenerateItemNeedCount = runtime.Items[practiseItem.GenerateItemNeedCost.Id.ToString()];
+            var GenerateItemList = new List<Jyx2ConfigCharacterItem>();
+            var GenerateItemArr = practiseItem.GenerateItems.Split('|');
+            foreach (var GenerateItem in GenerateItemArr)
+            {
+                var GenerateItemArr2 = GenerateItem.Split(',');
+                if (GenerateItemArr2.Length != 2) continue;
+                var characterItem = new Jyx2ConfigCharacterItem();
+                characterItem.Id = int.Parse(GenerateItemArr2[0]);
+                characterItem.Count = int.Parse(GenerateItemArr2[1]);
+                GenerateItemList.Add(characterItem);
+            }
+            int GenerateItemNeedCount = runtime.Items[practiseItem.GenerateItemNeedCost.ToString()].Item1;
             int GenerateItemNeedExp = (7 - IQ / 15) * practiseItem.GenerateItemNeedExp;
-            if (ExpForMakeItem >= GenerateItemNeedExp && GenerateItemNeedCount  >= practiseItem.GenerateItems.Count)
+            
+            if (ExpForMakeItem >= GenerateItemNeedExp && GenerateItemNeedCount  >= GenerateItemList.Count)
             {
                 //随机选择练出的物品
-                var pickItem = Jyx2.Middleware.Tools.GetRandomElement(practiseItem.GenerateItems);
+                var pickItem = Jyx2.Middleware.Tools.GetRandomElement(GenerateItemList);
                 
                 //已经有物品
-                if (runtime.HaveItemBool(pickItem.Item.Id))
+                if (runtime.HaveItemBool(pickItem.Id))
                 {
-                    runtime.AddItem(pickItem.Item.Id, 1);
+                    runtime.AddItem(pickItem.Id, 1);
                 }
                 else
                 {
-                    runtime.AddItem(pickItem.Item.Id, 1 + Random.Range(0, 3));
+                    runtime.AddItem(pickItem.Id, 1 + Random.Range(0, 3));
                 }
                 
-                runtime.AddItem(practiseItem.GenerateItemNeedCost.Id, -pickItem.Count);
+                runtime.AddItem(practiseItem.GenerateItemNeedCost, -pickItem.Count);
                 ExpForMakeItem = 0;
-                return $"{Name} 制造出 {pickItem.Item.Name}\n";
+                return $"{Name} 制造出 {GameConfigDatabase.Instance.Get<Jyx2ConfigItem>(pickItem.Id).Name}\n";
             }
 
             return "";
@@ -636,7 +656,7 @@ namespace Jyx2
             {
                 if (item.Skill != null)
                 {
-                    this.LearnMagic(item.Skill.Id);
+                    this.LearnMagic(item.Skill);
                 }
 
                 this.ExpForItem = 0;
@@ -720,7 +740,7 @@ namespace Jyx2
             //有关联武学的，如已满级则不可修炼
             if (item.Skill != null)
             {
-                int magic_level_index = GetWugongLevel(item.Skill.Id);
+                int magic_level_index = GetWugongLevel(item.Skill);
                 if (magic_level_index == GameConst.MAX_SKILL_LEVEL)
                 {
                     return GameConst.MAX_EXP;
@@ -1037,10 +1057,20 @@ namespace Jyx2
         /// <returns></returns>
         public int GetExtraAttack(Jyx2ConfigSkill wugong)
         {
-            if (Weapon != -1 && this.GetWeapon().PairedWugong != null && this.GetWeapon().PairedWugong.Id == wugong.Id)
-                return this.GetWeapon().ExtraAttack;
+            var extra = GameConfigDatabase.Instance.Get<Jyx2ConfigExtra>(Weapon);
+            if (extra != null && extra.Wugong == wugong.Id)
+            {
+                return extra.ExtraAttack;
+            }
             return 0;
+        }
 
+
+        public RoleInstance Clone()
+        {
+            var data = ES3.Serialize(this);
+            var newRole = ES3.Deserialize<RoleInstance>(data);
+            return newRole;
         }
     }
 }

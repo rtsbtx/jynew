@@ -21,7 +21,7 @@ namespace ES3Types
 			writer.WriteProperty("SubMapData", instance.SubMapData, ES3UserType_SubMapSaveData.Instance);
 			writer.WriteProperty("WorldData", instance.WorldData, ES3UserType_WorldMapSaveData.Instance);
 			writer.WriteProperty("KeyValues", instance.KeyValues, ES3Internal.ES3TypeMgr.GetES3Type(typeof(System.Collections.Generic.Dictionary<System.String, System.String>)));
-			writer.WriteProperty("Items", instance.Items, ES3Internal.ES3TypeMgr.GetES3Type(typeof(System.Collections.Generic.Dictionary<System.String, System.Int32>)));
+			writer.WriteProperty("Items", instance.Items, ES3Internal.ES3TypeMgr.GetES3Type(typeof(System.Collections.Generic.Dictionary<System.String, (System.Int32, System.Int32)>)));
 			writer.WriteProperty("ItemUser", instance.ItemUser, ES3Internal.ES3TypeMgr.GetES3Type(typeof(System.Collections.Generic.Dictionary<System.String, System.Int32>)));
 			writer.WriteProperty("ShopItems", instance.ShopItems, ES3Internal.ES3TypeMgr.GetES3Type(typeof(System.Collections.Generic.Dictionary<System.String, System.Int32>)));
 			writer.WriteProperty("EventCounter", instance.EventCounter, ES3Internal.ES3TypeMgr.GetES3Type(typeof(System.Collections.Generic.Dictionary<System.String, System.Int32>)));
@@ -54,7 +54,7 @@ namespace ES3Types
 						instance.KeyValues = reader.Read<System.Collections.Generic.Dictionary<System.String, System.String>>();
 						break;
 					case "Items":
-						instance.Items = reader.Read<System.Collections.Generic.Dictionary<System.String, System.Int32>>();
+						instance.Items = reader.Read<System.Collections.Generic.Dictionary<System.String, (System.Int32, System.Int32)>>();
 						break;
 					case "ItemUser":
 						instance.ItemUser = reader.Read<System.Collections.Generic.Dictionary<System.String, System.Int32>>();
@@ -69,11 +69,11 @@ namespace ES3Types
 						instance.MapPic = reader.Read<System.Collections.Generic.Dictionary<System.String, System.Int32>>();
 						break;
 					case "ItemAdded":
-						reader.SetPrivateField("ItemAdded", reader.Read<System.Collections.Generic.List<System.Int32>>(), instance);
-						break;
+					reader.SetPrivateField("ItemAdded", reader.Read<System.Collections.Generic.List<System.Int32>>(), instance);
+					break;
 					case "_startDate":
-						reader.SetPrivateField("_startDate", reader.Read<System.DateTime>(), instance);
-						break;
+					reader.SetPrivateField("_startDate", reader.Read<System.DateTime>(), instance);
+					break;
 					default:
 						reader.Skip();
 						break;
